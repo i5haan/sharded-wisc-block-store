@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+service Rnbss
+{
+    rpc isAlive(Request) returns (Response) {}
+    rpc Read(ReadRequest) returns (DataBlock) {}
+    rpc Write(WriteRequest) returns (Response) {}
+}
+message Request
+{
+
+}
+message Response
+{
+    enum Status {
+        VALID = 0;
+        INVALID = 1;
+    }
+    Status status = 1;   
+}
+message ReadRequest
+{
+    int32 address = 1;
+} 
+message DataBlock
+{
+    enum Status {
+        VALID = 0;
+        INVALID = 1;
+    }
+    Status status = 1;
+    string data = 2;
+}
+message WriteRequest
+{
+    int32 address = 1;
+    string data = 2;
+}

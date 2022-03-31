@@ -64,7 +64,7 @@ class BlockManager {
             int blockOffset = getBlockOffset(blockNumber);
             string offsetPath = fsRoot + "/" + to_string(blockOffset);
             string blockPath = offsetPath + "/" + to_string(blockNumber);
-            cout << "Performing an alligned write on addr[" << addr <<"] with block path[" << blockPath << "] and offset path[" << offsetPath << "]" << endl;
+            cout << "[BlockManager] Performing an alligned write on addr[" << addr <<"] with block path[" << blockPath << "] and offset path[" << offsetPath << "]" << endl;
             
             mkdir(offsetPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // To make sure the offset directory exists
 
@@ -99,7 +99,7 @@ class BlockManager {
             int blockOffset = getBlockOffset(blockNumber);
             string offsetPath = fsRoot + "/" + to_string(blockOffset);
             string blockPath = offsetPath + "/" + to_string(blockNumber);
-            cout << "Performing an alligned read on addr[" << addr <<"] with block path[" << blockPath << "] and offset path[" << offsetPath << "]" << endl;
+            cout << "[BlockManager] Performing an alligned read on addr[" << addr <<"] with block path[" << blockPath << "] and offset path[" << offsetPath << "]" << endl;
             
 
             int fd = open(blockPath.c_str(),

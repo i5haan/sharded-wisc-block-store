@@ -17,7 +17,7 @@
 #include <mutex>          // std::mutex
 
 #include "hafs.grpc.pb.h"
-// #include "client_lib.h"
+// #include "client_imp.h"
 // #include "block_manager.h"
 #include "common.cc"
 #include "replicator.h"
@@ -46,7 +46,7 @@ class HafsImpl final : public Hafs::Service {
             this->role = role;
             this->blockManager = blockManager;
             // this->replicator = replicator;
-            std::cout << "Starting up the Ha FS server!" << std::endl;
+            std::cout << "[Server] Starting up the Ha FS server!" << std::endl;
 
         }
 
@@ -56,6 +56,7 @@ class HafsImpl final : public Hafs::Service {
         }
 
         Status Read(ServerContext *context, const ReadRequest *req, ReadResponse *res) override {
+            std::cout << "[Server] (Read) addr=" << req->address() << std::endl;
             std::string data;
             blockManager.read(req->address(), &data);
             res->set_data(data);
@@ -64,10 +65,12 @@ class HafsImpl final : public Hafs::Service {
         }
 
         Status Write(ServerContext *context, const WriteRequest *req, Response *res) override {
+            std::cout << "[Server] (Write) addr=" << req->address() << std::endl;
             if(!replicator.otherMirrorClient.getIsAlive()) {
-                std::cout << "Other Replica down, sending block to replicator after local write!!" << std::endl;
+                std::cout << "[Server](write) Other Replica down, sending block to replicator after local write!!" << std::endl;
                 blockManager.write(req->address(), req->data());
-                // Send to replicator!
+                // std::cout << "adding to queue addr: " << req->address() << std::endl;
+                replicator.addPendingBlock(req->address());
                 res->set_status(Response_Status_VALID);
                 return Status::OK;
             } else {
@@ -77,7 +80,7 @@ class HafsImpl final : public Hafs::Service {
                     res->set_status(Response_Status_VALID);
                     return Status::OK;
                 } else {
-                    std::cout << "Write to other replica fail!! Rejecting this write!" << std::endl;
+                    std::cout << "[Server](write) Write to other replica fail!! Rejecting this write!" << std::endl;
                     res->set_status(Response_Status_INVALID);
                     return Status::OK;
                 }
@@ -85,6 +88,7 @@ class HafsImpl final : public Hafs::Service {
         }
 
         Status ReplicateBlock(ServerContext *context, const WriteRequest *req, Response *res) override {
+            std::cout << "[Server] (ReplicateBlock) addr=" << req->address() << std::endl;
             blockManager.write(req->address(), req->data());
             res->set_status(Response_Status_VALID);
             return Status::OK;

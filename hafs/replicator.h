@@ -9,9 +9,9 @@
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
-#include<thread>
-#include<ctime>
-#include<chrono>
+#include <thread>
+#include <ctime>
+#include <chrono>
 
 #include "client_imp.h"
 #include "block_manager.h"

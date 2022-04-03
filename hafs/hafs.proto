@@ -21,8 +21,16 @@ message HeartBeatResponse
         PRIMARY   = 0;
         BACKUP    = 1;
     } 
-    Role role     = 1;
+    enum Health {
+        HEALTHY                = 0;
+        REINTEGRATION_BEHIND   = 1;
+        REINTEGRATION_AHEAD    = 2;
+        SINGLE_REPLICA_AHEAD   = 3;
+        UNHEALTHY              = 4;
+    }
+    Role role      = 1;
     Status status  = 2;
+    Health health  = 3;
 
 }
 

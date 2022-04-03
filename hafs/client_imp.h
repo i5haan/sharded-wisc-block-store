@@ -53,10 +53,12 @@ class HafsClient {
 
         void checkHeartBeat() {
             HeartBeatResponse response = this->HeartBeat();
-            std::cout << "[HafsCLient] Recieved Hearbeat, Status[" << HeartBeatResponse_Status_Name(response.status()) << "], Role[" << HeartBeatResponse_Role_Name(response.role()) << "] from address[" << this->address << "]" << std::endl;
+            std::cout << "[HafsCLient] Recieved Hearbeat, Status[" << HeartBeatResponse_Status_Name(response.status()) << "], Role[" << HeartBeatResponse_Role_Name(response.role()) << "], Health[" << HeartBeatResponse_Health_Name(response.health()) << "] from address[" << this->address << "]" << std::endl;
             if(response.status() == HeartBeatResponse_Status_INVALID) {
+                replicatorHealth = HeartBeatResponse_Health_UNHEALTHY;
                 this->isAlive = false;
             } else {
+                replicatorHealth = response.health();
                 this->isAlive = true;
             }
         }
@@ -135,8 +137,13 @@ class HafsClient {
             return isAlive;
         }
 
+        HeartBeatResponse_Health getReplicatorHealth() {
+            return replicatorHealth;
+        }
+
     private:
         std::unique_ptr<Hafs::Stub> stub_;
         std::string address;
         bool isAlive;
+        HeartBeatResponse_Health replicatorHealth;
 };

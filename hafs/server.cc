@@ -52,6 +52,7 @@ class HafsImpl final : public Hafs::Service {
 
         Status HeartBeat(ServerContext *context, const Request *req, HeartBeatResponse *res) override {
             res->set_role(this->role);
+            res->set_health(replicator.getHealth());
             return Status::OK;
         }
 

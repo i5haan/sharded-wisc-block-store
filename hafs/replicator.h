@@ -25,6 +25,7 @@ class Replicator {
         // HafsClient otherMirrorClient;
         BlockManager blockManager;
         std::mutex queueLock;
+        HeartBeatResponse_Health health;
     public:
         HafsClient otherMirrorClient;
         Replicator() {
@@ -32,6 +33,7 @@ class Replicator {
         }
         explicit Replicator(string otherMirrorAddress, BlockManager blockManager): otherMirrorClient(grpc::CreateChannel(otherMirrorAddress, grpc::InsecureChannelCredentials()), otherMirrorAddress, false) {
             this->blockManager = blockManager;
+            this->health       = HeartBeatResponse_Health_UNHEALTHY;
             std::thread thread_object(&Replicator::consumer, this);
             thread_object.detach();
         }
@@ -39,9 +41,11 @@ class Replicator {
         void consumer() {
             while(true) {
                 if(!otherMirrorClient.getIsAlive()) {
-                    cout << "[Replicator] Other mirror is not alive!! Sleeping for 2 seconds" << endl;
+                    cout << "[Replicator] Other mirror is not alive!! Marking mirror as SINGLE_REPLICA_AHEAD!" << endl;
+                    health = HeartBeatResponse_Health_SINGLE_REPLICA_AHEAD;
                     usleep(2*1000000);
                 } else if(!pendingBlocks.empty()) {
+                    health = HeartBeatResponse_Health_REINTEGRATION_AHEAD;
                     while(!pendingBlocks.empty()) {
                         int nextPendingAddress = removeAndGetLastPendingBlock();
                         cout<< "[Replicator] Processing pending block [" << nextPendingAddress <<  "]" << endl;
@@ -53,7 +57,13 @@ class Replicator {
                         }
                     }
                 } else {
-                    cout << "[Replicator] Pending queue is empty, sleeping for 2 seconds" << endl;
+                    if(otherMirrorClient.getReplicatorHealth() == HeartBeatResponse_Health_REINTEGRATION_AHEAD){
+                        cout << "[Replicator] Pending queue is empty, sleeping for 2 seconds, marking mirror as REINTEGRATION_AHEAD since other mirror has queue" << endl;
+                        health = HeartBeatResponse_Health_REINTEGRATION_BEHIND;
+                    } else {
+                        cout << "[Replicator] Pending queue is empty, sleeping for 2 seconds, marking mirror as HEALTHY" << endl;
+                        health = HeartBeatResponse_Health_HEALTHY;
+                    }
                     usleep(2*1000000);
                 }
             }
@@ -78,6 +88,10 @@ class Replicator {
             queueLock.unlock();
 
             return lastAddr;
+        }
+
+        HeartBeatResponse_Health getHealth() {
+            return health;
         }
 
 };

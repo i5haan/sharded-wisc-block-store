@@ -12,7 +12,7 @@ class HafsClientFactory {
         }
 
         bool Write(int addr, std::string data) {
-            if(primary.getIsAlive()) {
+            if(primary.getIsAlive() && (primary.getReplicatorHealth() == HeartBeatResponse_Health_HEALTHY || primary.getReplicatorHealth() == HeartBeatResponse_Health_SINGLE_REPLICA_AHEAD || primary.getReplicatorHealth() == HeartBeatResponse_Health_REINTEGRATION_AHEAD)) {
                 return primary.Write(addr, data);
             } else {
                 cout<< "[HafsClientFactory] [Warning] (Write) Primary can't serve request, delegating current request to Bakcup" << endl;
@@ -21,7 +21,7 @@ class HafsClientFactory {
         }
 
         bool Read(int addr, std::string* data) {
-            if(primary.getIsAlive()) {
+            if(primary.getIsAlive()  && (primary.getReplicatorHealth() == HeartBeatResponse_Health_HEALTHY || primary.getReplicatorHealth() == HeartBeatResponse_Health_SINGLE_REPLICA_AHEAD || primary.getReplicatorHealth() == HeartBeatResponse_Health_REINTEGRATION_AHEAD)) {
                 return primary.Read(addr, data);
             } else {
                 cout<< "[HafsClientFactory] [Warning] (Read) Primary can't serve request, delegating current request to Bakcup" << endl;

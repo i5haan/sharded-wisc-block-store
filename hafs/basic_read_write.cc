@@ -12,13 +12,9 @@ int main() {
     // // client.Read(0, &res);
     // // cout << "Data read: " << res << endl;
 
-    for(int i = 0; i < 39936; i++) {
-        client.Write(i*4096, string(4096, 'a'));
-    }
-
-    for(int i = 0; i < 39936; i++) {
-        client.Read(i*4096, &res);
-    }
+    client.Write(0, string(4096, 'a'));
+    client.Write(4096, string(4096, 'b'));
+    client.Write(5124, string(4096, 'c'));
 
     // client1.Write(8192 + 2048, string(4096, 'm'));
     // client.Write(8192 + 2048, string(4096, 'a'));
@@ -28,10 +24,12 @@ int main() {
     // client.Write(8192 + 8192, string(4096, 'e'));
     // client.Write(8192 + 8192 + 4096, string(4096, 'f'));
 
-    // // client.Read(0, &res);
-    // // cout << "Data read: " << res << endl;
-    // // client.Read(4096, &res);
-    // // cout << "Data read: " << res << endl;
+    client.Read(0, &res);
+    cout << "Data read: " << res << endl;
+    client.Read(4096, &res);
+    cout << "Data read: " << res << endl;
+    client.Read(8192, &res);
+    cout << "Data read: " << res << endl;
     // client1.Read(8192 + 2048, &res);
     // cout << "Data read: " << res << endl;
     // client.Read(8192 + 2048 + 8192 + 4096, &res);

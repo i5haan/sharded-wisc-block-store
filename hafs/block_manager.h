@@ -76,13 +76,13 @@ class BlockManager {
             string secondOffsetPath     = fsRoot + "/" + to_string(secondBlockDir);
             string secondBlockPath      = secondOffsetPath + "/" + to_string(secondBlockNumber);
             string tmpSecondOfsetPath    = fsRoot + "-tmp/" + to_string(secondBlockDir);
-            string tmpSecondBlockPath    = tmpFirstOfsetPath + "/" + to_string(secondBlockNumber);
+            string tmpSecondBlockPath    = tmpSecondOfsetPath + "/" + to_string(secondBlockNumber);
 
             mkdir(firstOffsetPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // To make sure the offset directory exists
             mkdir(secondOffsetPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
 
-            remove(secondBlockPath.c_str());
-            rename(tmpSecondBlockPath.c_str(), secondBlockPath.c_str());
+            remove(firstBlockPath.c_str());
+            rename(tmpFirstBlockPath.c_str(), firstBlockPath.c_str());
 
             remove(secondBlockPath.c_str());
             rename(tmpSecondBlockPath.c_str(), secondBlockPath.c_str());
@@ -102,9 +102,7 @@ class BlockManager {
             
             mkdir(offsetPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
             remove(blockPath.c_str());
-            if(rename(tempBlockPath.c_str(), blockPath.c_str()) < 0) {
-                std::cout << strerror(errno) << '\n';
-            }
+            cout << "rename: " << rename(tempBlockPath.c_str(), blockPath.c_str()) << endl;
             remove(tempBlockPath.c_str());
 
             return true;
@@ -174,15 +172,15 @@ class BlockManager {
                 S_IRWXU | S_IRWXG | S_IRWXO);
 
             string firstBuf;
-            firstBuf.resize(firstBlockReadSize);
-            firstBuf.replace(0, firstBlockReadSize, data.substr(0, firstBlockReadSize));
+            read(firstBlockNumber*BLOCK_SIZE, &firstBuf);
+            firstBuf.replace(firstBlockReadLocation, firstBlockReadSize, data.substr(0, firstBlockReadSize));
             string secondBuf;
-            secondBuf.resize(secondBlockReadSize);
-            secondBuf.replace(0, firstBlockReadSize, data.substr(firstBlockReadSize, secondBlockReadSize));
+            read(secondBlockNumber*BLOCK_SIZE, &secondBuf);
+            secondBuf.replace(0, secondBlockReadSize, data.substr(firstBlockReadSize, BLOCK_SIZE));
 
 
-            int firstRes  = pwrite(firstFd, &firstBuf[0], firstBlockReadSize, firstBlockReadLocation);
-            int secondRes = pwrite(secondFd, &secondBuf[0], secondBlockReadSize, secondBlockReadLocation);
+            int firstRes  = pwrite(firstFd, &firstBuf[0], BLOCK_SIZE, 0);
+            int secondRes = pwrite(secondFd, &secondBuf[0], BLOCK_SIZE, 0);
 
             if(firstRes == -1 || secondRes == -1) {
                 close(firstFd);
@@ -209,13 +207,14 @@ class BlockManager {
             // cout << "[BlockManager] Performing an alligned read on addr[" << addr <<"] with block path[" << blockPath << "] and offset path[" << offsetPath << "]" << endl;
             
 
-            mkdir(blockPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // To make sure the offset directory exists
+            mkdir(offsetPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // To make sure the offset directory exists
 
             int fd = open(blockPath.c_str(),
                 O_RDONLY,
                 S_IRWXU | S_IRWXG | S_IRWXO);
 
             if(fd < 0) {
+                data->resize(BLOCK_SIZE);
                 return false; // Probably this block does not exist!
             }
 
@@ -255,8 +254,8 @@ class BlockManager {
             string secondOffsetPath     = fsRoot + "/" + to_string(secondBlockDir);
             string secondBlockPath      = secondOffsetPath + "/" + to_string(secondBlockNumber);
 
-            mkdir(firstBlockPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // To make sure the offset directory exists
-            mkdir(secondBlockPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // To make sure the offset directory exists
+            mkdir(firstOffsetPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // To make sure the offset directory exists
+            mkdir(secondOffsetPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // To make sure the offset directory exists
 
 
             int firstFd = open(firstBlockPath.c_str(),

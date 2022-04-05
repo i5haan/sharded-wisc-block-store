@@ -127,7 +127,22 @@ class HafsClient {
             Status status = stub_->ReplicateBlock(&context, request, &response);
 
             if (!status.ok()) {
-                std::cout << "[HafsCLient] Replicate: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
+                std::cout << "[HafsCLient] ReplicateBlock: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
+                return false;
+            }
+            return true;
+        }
+
+        bool CommitBlock(int addr) {
+            WriteRequest request;
+            Response response;
+            ClientContext context;
+            request.set_address(addr);
+
+            Status status = stub_->CommitBlock(&context, request, &response);
+
+            if (!status.ok()) {
+                std::cout << "[HafsCLient] CommitBlock: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
                 return false;
             }
             return true;

@@ -53,7 +53,7 @@ class HafsClient {
 
         void checkHeartBeat() {
             HeartBeatResponse response = this->HeartBeat();
-            std::cout << "[HafsCLient] Recieved Hearbeat, Status[" << HeartBeatResponse_Status_Name(response.status()) << "], Role[" << HeartBeatResponse_Role_Name(response.role()) << "], Health[" << HeartBeatResponse_Health_Name(response.health()) << "] from address[" << this->address << "]" << std::endl;
+            // std::cout << "[HafsCLient] Recieved Hearbeat, Status[" << HeartBeatResponse_Status_Name(response.status()) << "], Role[" << HeartBeatResponse_Role_Name(response.role()) << "], Health[" << HeartBeatResponse_Health_Name(response.health()) << "] from address[" << this->address << "]" << std::endl;
             if(response.status() == HeartBeatResponse_Status_INVALID) {
                 replicatorHealth = HeartBeatResponse_Health_UNHEALTHY;
                 this->isAlive = false;
@@ -127,7 +127,22 @@ class HafsClient {
             Status status = stub_->ReplicateBlock(&context, request, &response);
 
             if (!status.ok()) {
-                std::cout << "[HafsCLient] Replicate: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
+                std::cout << "[HafsCLient] ReplicateBlock: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
+                return false;
+            }
+            return true;
+        }
+
+        bool CommitBlock(int addr) {
+            WriteRequest request;
+            Response response;
+            ClientContext context;
+            request.set_address(addr);
+
+            Status status = stub_->CommitBlock(&context, request, &response);
+
+            if (!status.ok()) {
+                std::cout << "[HafsCLient] CommitBlock: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
                 return false;
             }
             return true;

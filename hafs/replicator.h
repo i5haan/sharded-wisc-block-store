@@ -54,6 +54,9 @@ class Replicator {
                         if(!otherMirrorClient.ReplicateBlock(nextPendingAddress, data)) {
                             cout<< "[Replicator] Block [" << nextPendingAddress <<  "] failed while trying to replicate, requeueing!" << endl;
                             addPendingBlock(nextPendingAddress);
+                        } else if(!otherMirrorClient.CommitBlock(nextPendingAddress)) {
+                            cout<< "[Replicator] Block [" << nextPendingAddress <<  "] failed while trying to commit, requeueing!" << endl;
+                            addPendingBlock(nextPendingAddress);
                         }
                     }
                 } else {

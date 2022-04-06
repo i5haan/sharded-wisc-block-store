@@ -6,6 +6,7 @@ service Hafs
     rpc Read(ReadRequest) returns (ReadResponse) {}
     rpc Write(WriteRequest) returns (Response) {}
     rpc ReplicateBlock(WriteRequest) returns (Response) {}
+    rpc CommitBlock(WriteRequest) returns (Response) {}
 }
 message Request
 {

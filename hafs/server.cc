@@ -70,6 +70,7 @@ class HafsImpl final : public Hafs::Service {
             if(!replicator.otherMirrorClient.getIsAlive()) {
                 std::cout << "[Server](write) Other Replica down, sending block to replicator after local write!!" << std::endl;
                 blockManager.write(req->address(), req->data());
+                blockManager.commit(req->address());
                 // std::cout << "adding to queue addr: " << req->address() << std::endl;
                 replicator.addPendingBlock(req->address());
                 res->set_status(Response_Status_VALID);
@@ -78,7 +79,12 @@ class HafsImpl final : public Hafs::Service {
                 // std::cout << "Persisting block to other replica!" << std::endl;
                 if(replicator.otherMirrorClient.ReplicateBlock(req->address(), req->data())) {
                     blockManager.write(req->address(), req->data());
-                    res->set_status(Response_Status_VALID);
+                    if(replicator.otherMirrorClient.CommitBlock(req->address())) {
+                        blockManager.commit(req->address());
+                        res->set_status(Response_Status_VALID);
+                        return Status::OK;
+                    }
+                    res->set_status(Response_Status_INVALID);
                     return Status::OK;
                 } else {
                     std::cout << "[Server](write) Write to other replica fail!! Rejecting this write!" << std::endl;
@@ -91,6 +97,13 @@ class HafsImpl final : public Hafs::Service {
         Status ReplicateBlock(ServerContext *context, const WriteRequest *req, Response *res) override {
             std::cout << "[Server] (ReplicateBlock) addr=" << req->address() << std::endl;
             blockManager.write(req->address(), req->data());
+            res->set_status(Response_Status_VALID);
+            return Status::OK;
+        }
+
+        Status CommitBlock(ServerContext *context, const WriteRequest *req, Response *res) override { 
+            std::cout << "[Server] (CommitBlock) addr=" << req->address() << std::endl;
+            blockManager.commit(req->address());
             res->set_status(Response_Status_VALID);
             return Status::OK;
         }

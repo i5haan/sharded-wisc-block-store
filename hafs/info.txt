@@ -1,0 +1,3 @@
+./server --SAddr=155.98.36.88:8094 --path=/users/kalpit12/Test --role=b --MAddr=155.98.36.86:8093
+
+./server --SAddr=155.98.36.86:8093 --path=/users/kalpit12/Test --role=p --MAddr=155.98.36.88:8094

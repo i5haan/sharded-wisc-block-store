@@ -7,6 +7,7 @@ service Hafs
     rpc Write(WriteRequest) returns (Response) {}
     rpc ReplicateBlock(WriteRequest) returns (Response) {}
     rpc CommitBlock(WriteRequest) returns (Response) {}
+    rpc CheckConsistancy(ReadRequest) returns (Response) {}
 }
 message Request
 {

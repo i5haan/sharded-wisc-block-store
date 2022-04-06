@@ -21,7 +21,7 @@
 // #include "block_manager.h"
 #include "common.cc"
 #include "replicator.h"
-
+#include "SHA256.cc"
 using ::Request;
 using ::HeartBeatResponse;
 using ::ReadRequest;
@@ -59,9 +59,11 @@ class HafsImpl final : public Hafs::Service {
         Status Read(ServerContext *context, const ReadRequest *req, ReadResponse *res) override {
             std::cout << "[Server] (Read) addr=" << req->address() << std::endl;
             std::string data;
+            //blockManager.lockAddress(req->address());
             blockManager.read(req->address(), &data);
             res->set_data(data);
             res->set_status(ReadResponse_Status_VALID);
+            //blockManager.unlockAddress(req->address());
             return Status::OK;
         }
 
@@ -121,15 +123,33 @@ class HafsImpl final : public Hafs::Service {
             return Status::OK;
         }
 
+        Status CheckConsistancy(ServerContext *context, const ReadRequest *req, Response *res) override 
+        {
+            std::cout <<"[Server] Creating CheckSum"<<std::endl;
+            std::string data1;
+            std::string data2;
+            blockManager.lockAddress(req->address());        
+            blockManager.read(req->address(), &data1);
+            replicator.otherMirrorClient.Read(req->address(),&data2);
+            std::string pHash = blockManager.CalCheckSum(data1);
+            std::string bHash = blockManager.CalCheckSum(data2);
+            blockManager.unlockAddress(req->address());
+            if(pHash==bHash)
+                res->set_status(Response_Status_VALID);
+            else
+                res->set_status(Response_Status_INVALID);
+            return Status::OK;
+        }
+
 };
 
 int main(int argc, char **argv) {
-    std::string serverPort;
+    std::string serverAddr;
     std::string fsPath;
     std::string role;
     std::string otherMirrorAddress;
 
-    if(!getArg(argc, argv, "port", &serverPort, 1) || !getArg(argc, argv, "path", &fsPath, 2) || !getArg(argc, argv, "role", &role, 3) || !getArg(argc, argv, "address", &otherMirrorAddress, 4)) {
+    if(!getArg(argc, argv, "SAddr", &serverAddr, 1) || !getArg(argc, argv, "path", &fsPath, 2) || !getArg(argc, argv, "role", &role, 3) || !getArg(argc, argv, "MAddr", &otherMirrorAddress, 4)) {
         exit(1);
     }
 
@@ -143,7 +163,7 @@ int main(int argc, char **argv) {
         std::cout << "Incorrect role specified, can either be 'b' for backup and 'p' for primary!!!" << std::endl;
     }
 
-    std::string server_address = "0.0.0.0:" + serverPort;
+    std::string server_address = serverAddr;
     HafsImpl service(otherMirrorAddress, roleEnum, BlockManager(fsPath));
     ServerBuilder builder;
     // HafsClient client(grpc::CreateChannel("0.0.0.0:8091", grpc::InsecureChannelCredentials()), "0.0.0.0:8091", false);

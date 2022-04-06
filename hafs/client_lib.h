@@ -28,4 +28,20 @@ class HafsClientFactory {
                 return backup.Read(addr, data);
             }
         }
+        bool CheckConsistancy(int addr)
+        {
+            if(primary.getIsAlive() && backup.getIsAlive())
+            {
+                string pHash,bHash;
+                primary.CheckConsistancy(addr, &pHash);
+                backup.CheckConsistancy(addr,&bHash);
+
+                if(pHash==bHash)
+                return true;
+                else
+                return false;
+            }
+            else
+                return false;
+        }
 };

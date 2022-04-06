@@ -21,7 +21,7 @@
 // #include "block_manager.h"
 #include "common.cc"
 #include "replicator.h"
-
+#include "SHA256.cc"
 using ::Request;
 using ::HeartBeatResponse;
 using ::ReadRequest;
@@ -121,15 +121,22 @@ class HafsImpl final : public Hafs::Service {
             return Status::OK;
         }
 
+        Status CheckConsistancy(ServerContext *context, const ReadRequest *req, CheckSum *res) override 
+        {
+            std::cout <<"[Server] Creating CheckSum"<<std::endl;
+            res->set_hash(blockManager.CalCheckSum(req->address()));
+            return Status::OK;
+        }
+
 };
 
 int main(int argc, char **argv) {
-    std::string serverPort;
+    std::string serverAddr;
     std::string fsPath;
     std::string role;
     std::string otherMirrorAddress;
 
-    if(!getArg(argc, argv, "port", &serverPort, 1) || !getArg(argc, argv, "path", &fsPath, 2) || !getArg(argc, argv, "role", &role, 3) || !getArg(argc, argv, "address", &otherMirrorAddress, 4)) {
+    if(!getArg(argc, argv, "SAddr", &serverAddr, 1) || !getArg(argc, argv, "path", &fsPath, 2) || !getArg(argc, argv, "role", &role, 3) || !getArg(argc, argv, "MAddr", &otherMirrorAddress, 4)) {
         exit(1);
     }
 
@@ -143,7 +150,7 @@ int main(int argc, char **argv) {
         std::cout << "Incorrect role specified, can either be 'b' for backup and 'p' for primary!!!" << std::endl;
     }
 
-    std::string server_address = "0.0.0.0:" + serverPort;
+    std::string server_address = serverAddr;
     HafsImpl service(otherMirrorAddress, roleEnum, BlockManager(fsPath));
     ServerBuilder builder;
     // HafsClient client(grpc::CreateChannel("0.0.0.0:8091", grpc::InsecureChannelCredentials()), "0.0.0.0:8091", false);

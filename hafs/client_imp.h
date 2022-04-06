@@ -147,6 +147,23 @@ class HafsClient {
             }
             return true;
         }
+        
+        bool CheckConsistancy(int addr, std::string* hash) {
+            ReadRequest request;
+            CheckSum response;
+            ClientContext context;
+            request.set_address(addr);
+
+            Status status = stub_->CheckConsistancy(&context, request, &response);
+            
+            if (!status.ok()) {
+                std::cout << "[HafsCLient] CheckConsistancy: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
+                return false;
+            }
+            hash->resize(response.hash().size());
+            hash->replace(0, response.hash().size(), response.hash());
+            return true;
+        }
 
         bool getIsAlive() {
             return isAlive;

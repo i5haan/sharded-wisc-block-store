@@ -73,19 +73,18 @@ class HafsImpl final : public Hafs::Service {
             blockManager.lockAddress(req->address());
             if(!replicator.otherMirrorClient.getIsAlive()) {
                 std::cout << "[Server](write) Other Replica down, sending block to replicator after local write!!" << std::endl;
-                crash(req->address(), "clientRetryRequired");
                 blockManager.write(req->address(), req->data());
                 blockManager.commit(req->address());
                 // std::cout << "adding to queue addr: " << req->address() << std::endl;
                 replicator.addPendingBlock(req->address());
                 res->set_status(Response_Status_VALID);
                 blockManager.unlockAddress(req->address());
-                crash(req->address(), "onlyAckMissing");
 
                 return Status::OK;
             } else {
                 // std::cout << "Persisting block to other replica!" << std::endl;
                 if(replicator.otherMirrorClient.ReplicateBlock(req->address(), req->data())) {
+                    crash(req->address(), "primaryFailAfterBackupTemp");
                     blockManager.write(req->address(), req->data());
                     if(replicator.otherMirrorClient.CommitBlock(req->address())) {
                         blockManager.commit(req->address());
@@ -151,13 +150,14 @@ class HafsImpl final : public Hafs::Service {
                 exit(1);
             }
 
-            else if (address == 8192 && mask == "clientRetryRequired" && role == HeartBeatResponse_Role_PRIMARY){
+
+            if (address == 8192 && mask == "clientRetryRequired" && role == HeartBeatResponse_Role_PRIMARY){
                 cout << "[Testing] Primary failing after receiving ack from backup (Temp inconsistency)" << endl;
                 exit(1);
             }
 
             else if (address == 12288 && mask == "onlyAckMissing" && role == HeartBeatResponse_Role_PRIMARY) {
-                cout << "Primary failing after just before sending ack (Dirty data on both primary and backup)" << endl;
+                cout << "Primary failing just before sending ack (Dirty data on both primary and backup)" << endl;
                 exit(1);
             }
         }

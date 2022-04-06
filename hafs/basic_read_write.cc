@@ -1,65 +1,53 @@
 #include<iostream>
+#include<thread>
+#include<chrono>
 #include "client_lib.h"
 
 using namespace std;
 
+void writeToSamePlace(char a) {
+    HafsClientFactory client("0.0.0.0:8090", "0.0.0.0:8091");
+
+    client.Write(24, string(4096, a));
+}
+
 
 int main() {
-    HafsClientFactory client("0.0.0.0:8090", "0.0.0.0:8091");
+    string res;
+
+    thread t1(writeToSamePlace, 'a');
+    thread t2(writeToSamePlace, 'b');
+    thread t3(writeToSamePlace, 'c');
+    thread t4(writeToSamePlace, 'd');
+    thread t5(writeToSamePlace, 'e');
+    thread t6(writeToSamePlace, 'f');
+    t1.join();
+    t2.join();
+    t3.join();
+    t4.join();
+    t5.join();
+    t6.join();
+
     HafsClient client1(grpc::CreateChannel("0.0.0.0:8090", grpc::InsecureChannelCredentials()), "0.0.0.0:8090", false);
     HafsClient client2(grpc::CreateChannel("0.0.0.0:8091", grpc::InsecureChannelCredentials()), "0.0.0.0:8091", false);
-    string res;
-    // // client.Read(0, &res);
-    // // cout << "Data read: " << res << endl;
 
-    client.Write(0, string(4096, 'a'));
-    client.Write(4096, string(4096, 'b'));
-    client.Write(5124, string(4096, 'c'));
+    client1.Read(0,  &res);
+    cout << "client1: " << res << endl << endl;
 
-    // client1.Write(8192 + 2048, string(4096, 'm'));
-    // client.Write(8192 + 2048, string(4096, 'a'));
-    // client.Write(4096, string(4096, 'b'));
-    // client.Write(8192, string(4096, 'c'));
-    // client.Write(8192 + 4096, string(4096, 'd'));
-    // client.Write(8192 + 8192, string(4096, 'e'));
-    // client.Write(8192 + 8192 + 4096, string(4096, 'f'));
+    client2.Read(0, &res);
+    cout << "client2: " << res << endl << endl;
 
-    client.Read(0, &res);
-    cout << "Data read: " << res << endl;
-    client.Read(4096, &res);
-    cout << "Data read: " << res << endl;
-    client.Read(8192, &res);
-    cout << "Data read: " << res << endl;
-    // client1.Read(8192 + 2048, &res);
-    // cout << "Data read: " << res << endl;
-    // client.Read(8192 + 2048 + 8192 + 4096, &res);
-    // cout << "Data read: " << res << endl;
-    // cout << "Data Size: " << res.size() << endl;
-    // client.Read(8192 + 2048 + 8192 + 8192, &res);
-    // cout << "Data read: " << res << endl;
-    // cout << "Data Size: " << res.size() << endl;
-    // client.Read(8192, &res);
-    // cout << "Data read: " << res << endl;
-    // client.Read(8192 + 4096, &res);
-    // cout << "Data read: " << res << endl;
-    // client2.Read(2048, &res);
-    // cout << "Data read: " << res << endl;
-    // client2.Read(8192 + 4096, &res);
-    // cout << "Data read: " << res << endl;
-    // client2.Read(8192 + 8192, &res);
-    // cout << "Data read: " << res << endl;
-    // client2.Read(8192 + 8192 + 4096, &res);
-    // cout << "Data read: " << res << endl;
+    client1.Read(24,  &res);
+    cout << "client1: " << res << endl << endl;
 
+    client2.Read(24, &res);
+    cout << "client2: " << res << endl << endl;
 
+    client1.Read(4096,  &res);
+    cout << "client1: " << res << endl << endl;
 
-    // // client.Write(4096, string(4096, 'b'));
-    // // client.Write(8192, string(4096, 'c'));
+    client2.Read(4096, &res);
+    cout << "client2: " << res << endl << endl;
 
-    // // string res2;
-    // // client.Read(8392704, &res2);
-    // // cout << "Data read: " << res2 << endl;
-
-    // usleep(10*1000000);
     return 0;
 }

@@ -67,6 +67,7 @@ class HafsImpl final : public Hafs::Service {
 
         Status Write(ServerContext *context, const WriteRequest *req, Response *res) override {
             std::cout << "[Server] (Write) addr=" << req->address() << std::endl;
+            blockManager.lockAddress(req->address());
             if(!replicator.otherMirrorClient.getIsAlive()) {
                 std::cout << "[Server](write) Other Replica down, sending block to replicator after local write!!" << std::endl;
                 blockManager.write(req->address(), req->data());
@@ -74,6 +75,7 @@ class HafsImpl final : public Hafs::Service {
                 // std::cout << "adding to queue addr: " << req->address() << std::endl;
                 replicator.addPendingBlock(req->address());
                 res->set_status(Response_Status_VALID);
+                blockManager.unlockAddress(req->address());
                 return Status::OK;
             } else {
                 // std::cout << "Persisting block to other replica!" << std::endl;
@@ -82,13 +84,16 @@ class HafsImpl final : public Hafs::Service {
                     if(replicator.otherMirrorClient.CommitBlock(req->address())) {
                         blockManager.commit(req->address());
                         res->set_status(Response_Status_VALID);
+                        blockManager.unlockAddress(req->address());
                         return Status::OK;
                     }
                     res->set_status(Response_Status_INVALID);
+                    blockManager.unlockAddress(req->address());
                     return Status::OK;
                 } else {
                     std::cout << "[Server](write) Write to other replica fail!! Rejecting this write!" << std::endl;
                     res->set_status(Response_Status_INVALID);
+                    blockManager.unlockAddress(req->address());
                     return Status::OK;
                 }
             }
@@ -96,15 +101,23 @@ class HafsImpl final : public Hafs::Service {
 
         Status ReplicateBlock(ServerContext *context, const WriteRequest *req, Response *res) override {
             std::cout << "[Server] (ReplicateBlock) addr=" << req->address() << std::endl;
+            blockManager.lockAddress(req->address());
+            
             blockManager.write(req->address(), req->data());
             res->set_status(Response_Status_VALID);
+
+            blockManager.unlockAddress(req->address());
             return Status::OK;
         }
 
         Status CommitBlock(ServerContext *context, const WriteRequest *req, Response *res) override { 
             std::cout << "[Server] (CommitBlock) addr=" << req->address() << std::endl;
+            blockManager.lockAddress(req->address());
+
             blockManager.commit(req->address());
             res->set_status(Response_Status_VALID);
+
+            blockManager.unlockAddress(req->address());
             return Status::OK;
         }
 

@@ -21,6 +21,8 @@ const int BLOCK_DIVIDER_SIZE = 2048;
 const int BLOCK_PER_DIVIDER  = 2048;
 const int MAX_BLOCK          = BLOCK_PER_DIVIDER*BLOCK_DIVIDER_SIZE;
 
+mutex blockLocks[MAX_BLOCK];
+
 
 class BlockManager {
     private:
@@ -52,6 +54,28 @@ class BlockManager {
         }
 
         // vector<int
+
+        void lockBlock(int blockNumber) {
+            blockLocks[blockNumber].lock();
+        }
+
+        void unlockBlock(int blockNumber) {
+            blockLocks[blockNumber].unlock();
+        }
+
+        void lockAddress(int addr) {
+            lockBlock(addr / BLOCK_SIZE);
+            if(!isAlligned(addr)) {
+                lockBlock((addr / BLOCK_SIZE) + 1);
+            }
+        }
+
+        void unlockAddress(int addr) {
+            if(!isAlligned(addr)) {
+                unlockBlock((addr / BLOCK_SIZE) + 1);
+            }
+            unlockBlock(addr / BLOCK_SIZE);
+        }
 
         bool commit(int addr) {
             if(!isAlligned(addr)) {

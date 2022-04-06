@@ -313,10 +313,8 @@ class BlockManager {
             close(secondFd);
             return true;
         }
-        string CalCheckSum(int addr)
+        string CalCheckSum(string data)
         {
-            string data;
-            read(addr,&data);
             return sha256(data);
         }         
 };

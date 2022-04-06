@@ -7,7 +7,7 @@ service Hafs
     rpc Write(WriteRequest) returns (Response) {}
     rpc ReplicateBlock(WriteRequest) returns (Response) {}
     rpc CommitBlock(WriteRequest) returns (Response) {}
-    rpc CheckConsistancy(ReadRequest) returns (CheckSum) {}
+    rpc CheckConsistancy(ReadRequest) returns (Response) {}
 }
 message Request
 {
@@ -64,8 +64,4 @@ message WriteRequest
 {
     int32 address = 1;
     string data   = 2;
-}
-message CheckSum
-{
-    string hash = 1;
 }

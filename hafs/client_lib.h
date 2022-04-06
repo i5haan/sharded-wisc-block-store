@@ -33,15 +33,8 @@ class HafsClientFactory {
             if(primary.getIsAlive() && backup.getIsAlive())
             {
                 string pHash,bHash;
-                primary.CheckConsistancy(addr, &pHash);
-                backup.CheckConsistancy(addr,&bHash);
-
-                if(pHash==bHash)
-                return true;
-                else
-                return false;
+                return primary.CheckConsistancy(addr);
             }
-            else
-                return false;
+                
         }
 };

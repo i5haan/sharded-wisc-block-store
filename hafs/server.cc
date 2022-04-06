@@ -59,9 +59,11 @@ class HafsImpl final : public Hafs::Service {
         Status Read(ServerContext *context, const ReadRequest *req, ReadResponse *res) override {
             std::cout << "[Server] (Read) addr=" << req->address() << std::endl;
             std::string data;
+            //blockManager.lockAddress(req->address());
             blockManager.read(req->address(), &data);
             res->set_data(data);
             res->set_status(ReadResponse_Status_VALID);
+            //blockManager.unlockAddress(req->address());
             return Status::OK;
         }
 
@@ -121,10 +123,21 @@ class HafsImpl final : public Hafs::Service {
             return Status::OK;
         }
 
-        Status CheckConsistancy(ServerContext *context, const ReadRequest *req, CheckSum *res) override 
+        Status CheckConsistancy(ServerContext *context, const ReadRequest *req, Response *res) override 
         {
             std::cout <<"[Server] Creating CheckSum"<<std::endl;
-            res->set_hash(blockManager.CalCheckSum(req->address()));
+            std::string data1;
+            std::string data2;
+            blockManager.lockAddress(req->address());        
+            blockManager.read(req->address(), &data1);
+            replicator.otherMirrorClient.Read(req->address(),&data2);
+            std::string pHash = blockManager.CalCheckSum(data1);
+            std::string bHash = blockManager.CalCheckSum(data2);
+            blockManager.unlockAddress(req->address());
+            if(pHash==bHash)
+                res->set_status(Response_Status_VALID);
+            else
+                res->set_status(Response_Status_INVALID);
             return Status::OK;
         }
 

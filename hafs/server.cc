@@ -17,7 +17,6 @@
 #include <mutex>          // std::mutex
 
 #include "hafs.grpc.pb.h"
-// #include "client_imp.h"
 // #include "block_manager.h"
 #include "common.cc"
 #include "replicator.h"
@@ -69,15 +68,20 @@ class HafsImpl final : public Hafs::Service {
 
         Status Write(ServerContext *context, const WriteRequest *req, Response *res) override {
             std::cout << "[Server] (Write) addr=" << req->address() << std::endl;
+            crash(req->address(), "primaryFail");
+
             blockManager.lockAddress(req->address());
             if(!replicator.otherMirrorClient.getIsAlive()) {
                 std::cout << "[Server](write) Other Replica down, sending block to replicator after local write!!" << std::endl;
+                crash(req->address(), "clientRetryRequired");
                 blockManager.write(req->address(), req->data());
                 blockManager.commit(req->address());
                 // std::cout << "adding to queue addr: " << req->address() << std::endl;
                 replicator.addPendingBlock(req->address());
                 res->set_status(Response_Status_VALID);
                 blockManager.unlockAddress(req->address());
+                crash(req->address(), "onlyAckMissing");
+
                 return Status::OK;
             } else {
                 // std::cout << "Persisting block to other replica!" << std::endl;
@@ -140,6 +144,24 @@ class HafsImpl final : public Hafs::Service {
                 res->set_status(Response_Status_INVALID);
             return Status::OK;
         }
+
+        void crash(int address, string mask){
+            if (address == 4096 && mask == "primaryFail" && role == HeartBeatResponse_Role_PRIMARY){
+                cout << "[Testing] Primary failing before sending request to backup" << endl;
+                exit(1);
+            }
+
+            else if (address == 8192 && mask == "clientRetryRequired" && role == HeartBeatResponse_Role_PRIMARY){
+                cout << "[Testing] Primary failing after receiving ack from backup (Temp inconsistency)" << endl;
+                exit(1);
+            }
+
+            else if (address == 12288 && mask == "onlyAckMissing" && role == HeartBeatResponse_Role_PRIMARY) {
+                cout << "Primary failing after just before sending ack (Dirty data on both primary and backup)" << endl;
+                exit(1);
+            }
+        }
+
 
 };
 

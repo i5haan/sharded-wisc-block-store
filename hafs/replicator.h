@@ -13,7 +13,7 @@
 #include <ctime>
 #include <chrono>
 
-#include "client_imp.h"
+#include "client_impl.h"
 #include "block_manager.h"
 
 using namespace std;
@@ -61,6 +61,11 @@ class Replicator {
                     health = HeartBeatResponse_Health_SINGLE_REPLICA_AHEAD;
                     usleep(2*1000000);
                 } else if(!pendingBlocks.empty()) {
+                    std::chrono::time_point<std::chrono::system_clock> start, end;
+
+                    start = std::chrono::system_clock::now();
+                    int size = pendingBlocks.size();
+
                     health = HeartBeatResponse_Health_REINTEGRATION_AHEAD;
                     int numCPU = sysconf(_SC_NPROCESSORS_ONLN);
                     vector<thread> threads;
@@ -72,6 +77,11 @@ class Replicator {
                     for(thread & t: threads) {
                         t.join();
                     }
+
+                    end = std::chrono::system_clock::now();
+                    std::chrono::duration<double> elapsed_seconds = end - start;
+                    std::cout << "[Replicator] Time taken to process Pending Queue of size: " << size << " is " << elapsed_seconds.count() << "s\n";
+
                 } else {
                     if(otherMirrorClient.getReplicatorHealth() == HeartBeatResponse_Health_REINTEGRATION_AHEAD){
                         cout << "[Replicator] Pending queue is empty, sleeping for 2 seconds, marking mirror as REINTEGRATION_AHEAD since other mirror has queue" << endl;

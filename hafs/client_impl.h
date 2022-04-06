@@ -30,12 +30,14 @@ using grpc::Status;
 
 class HafsClient {
     public:
+        int count;
         HafsClient() {}
         HafsClient(std::shared_ptr<Channel> channel, std::string address, bool isAlive): stub_(Hafs::NewStub(channel)) {
             std::cout << "[HafsCLient] Starting Hafs Client Instance!" <<std::endl;
             this->address = address;
             this->isAlive = isAlive;
             // Get first HearBeat here before starting thread
+            count = 0;
             checkHeartBeat();
             std::thread thread_object(&HafsClient::startHeartBeat, this);
             thread_object.detach();
@@ -53,7 +55,30 @@ class HafsClient {
 
         void checkHeartBeat() {
             HeartBeatResponse response = this->HeartBeat();
+            std::chrono::time_point<std::chrono::system_clock> start, end;
+
             // std::cout << "[HafsCLient] Recieved Hearbeat, Status[" << HeartBeatResponse_Status_Name(response.status()) << "], Role[" << HeartBeatResponse_Role_Name(response.role()) << "], Health[" << HeartBeatResponse_Health_Name(response.health()) << "] from address[" << this->address << "]" << std::endl;
+            if(response.health() == HeartBeatResponse_Health_REINTEGRATION_AHEAD){
+                //we start counter only when we received reintegration ahead status first time.
+                count++;
+                if(count==1){
+                    //startTime 
+                    start = std::chrono::system_clock::now();
+                }
+            }
+
+            if(response.health() == HeartBeatResponse_Health_HEALTHY){
+                if(count > 0){
+
+                    //stopTime
+                    count = 0;
+                    end = std::chrono::system_clock::now();
+                    std::chrono::duration<double> elapsed_seconds = end - start;
+                    std::cout << "[Replicator] Time taken to change status from REINTEGRATION to HEALTHY  is " << elapsed_seconds.count() << "s\n";
+                }
+            }
+
+
             if(response.status() == HeartBeatResponse_Status_INVALID) {
                 replicatorHealth = HeartBeatResponse_Health_UNHEALTHY;
                 this->isAlive = false;

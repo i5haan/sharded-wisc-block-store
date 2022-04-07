@@ -14,7 +14,7 @@ Single Client
 All writes differnt address
 */
 Metrics metric1,metric2;
-int SingleClientConsistencyDiffAddr()
+int SingleClientConsistencyDiffAddr(int NumWrites)
 {
     HafsClientFactory client("155.98.36.86:8093", "155.98.36.88:8094");
     //HafsClient client1(grpc::CreateChannel("155.98.36.86:8093", grpc::InsecureChannelCredentials()), "155.98.36.86:8093", false);
@@ -25,14 +25,14 @@ int SingleClientConsistencyDiffAddr()
 
     vector<int> UsedAddr;
     Timer2 time;
-    for(int i = 0; i < 10000; i++) {
+    for(int i = 0; i < NumWrites; i++) {
         int CharId = rand()%26;
         string data = string(4096, 'a'+ CharId);
         time.start();
         client.Write(i*4096, data);
         time.stop();
-        cout<<time.get_time_in_nanoseconds()<<endl;
-        metric1.add(time.get_time_in_nanoseconds());
+        //cout<<time.get_time_in_nanoseconds()<<endl;
+        //metric1.add(time.get_time_in_nanoseconds());
         UsedAddr.push_back(i*4096);
         /*client.Read(i*4096, &res);
 
@@ -61,7 +61,7 @@ int SingleClientConsistencyDiffAddr()
 Single Client 
 All address Same
 */
-int SingleClientConsistencySameAddr(int k)
+int SingleClientConsistencySameAddr(int k,int NumWrites)
 {
     HafsClientFactory client("155.98.36.86:8093", "155.98.36.88:8094");
     //HafsClient client1(grpc::CreateChannel("155.98.36.86:8093", grpc::InsecureChannelCredentials()), "155.98.36.86:8093", false);
@@ -71,13 +71,13 @@ int SingleClientConsistencySameAddr(int k)
     int Addr = k*4096;
     Timer2 time;
     
-    for(int i = 0; i < 10000; i++) {
+    for(int i = 0; i < NumWrites; i++) {
         int CharId = rand()%26;
         string data = string(4096, 'a'+ CharId);
         time.start();
         client.Write(Addr, data);
         time.stop();
-        cout<<time.get_time_in_nanoseconds()<<endl;
+        //cout<<time.get_time_in_nanoseconds()<<endl;
         metric2.add(time.get_time_in_nanoseconds());
         if(client.CheckConsistancy(Addr)!=true)
             return 0;

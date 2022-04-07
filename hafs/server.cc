@@ -57,7 +57,7 @@ class HafsImpl final : public Hafs::Service {
         }
 
         Status Read(ServerContext *context, const ReadRequest *req, ReadResponse *res) override {
-            std::cout << "[Server] (Read) addr=" << req->address() << std::endl;
+            //std::cout << "[Server] (Read) addr=" << req->address() << std::endl;
             std::string data;
             //blockManager.lockAddress(req->address());
             blockManager.read(req->address(), &data);
@@ -133,6 +133,8 @@ class HafsImpl final : public Hafs::Service {
             replicator.otherMirrorClient.Read(req->address(),&data2);
             std::string pHash = blockManager.CalCheckSum(data1);
             std::string bHash = blockManager.CalCheckSum(data2);
+            std::cout <<"[Server] Hash Value primary: "<<pHash<<std::endl;            
+            std::cout <<"[Server] Hash Value backup: "<<bHash<<std::endl;
             blockManager.unlockAddress(req->address());
             if(pHash==bHash)
                 res->set_status(Response_Status_VALID);

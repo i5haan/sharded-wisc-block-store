@@ -5,9 +5,9 @@
 using namespace std;
 
 int main(int argc, char **argv) {
-    HafsClientFactory client("0.0.0.0:8080", "0.0.0.0:8081");
-    //   HafsClientFactory client("server-0.test1.uwmadison744-f21.emulab.net:50052", 
-    // "server-1.test1.uwmadison744-f21.emulab.net:50053");
+    //HafsClientFactory client("0.0.0.0:8080", "0.0.0.0:8081");
+      HafsClientFactory client("server-0.test1.uwmadison744-f21.emulab.net:50052", 
+     "server-1.test1.uwmadison744-f21.emulab.net:50053");
  
     std::string testCase;
     if(!getArg(argc, argv, "tc", &testCase, 1)){
@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
         if(testCase == "onlyAckMissing"){        
             //at-most once semantics
             //both primary and backup contains data
-            client.Write(12288, string(4096,'c'));
+            client.Write(16384, string(4096,'c'));
         }
 
               

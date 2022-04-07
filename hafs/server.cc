@@ -92,7 +92,6 @@ class HafsImpl final : public Hafs::Service {
                         blockManager.commit(req->address());
                         res->set_status(Response_Status_VALID);
                         blockManager.unlockAddress(req->address());
-                        crash(req->address(), "onlyAckMissing");
                         return Status::OK;
                     }
                     res->set_status(Response_Status_INVALID);
@@ -154,8 +153,8 @@ class HafsImpl final : public Hafs::Service {
             }
 
 
-            if (address == 8192 && mask == "clientRetryRequired" && role == HeartBeatResponse_Role_PRIMARY){
-                cout << "[Testing] Primary failing after receiving ack from backup (Temp inconsistency)" << endl;
+            if (address == 8192 && mask == "primaryFailAfterBackupTemp" && role == HeartBeatResponse_Role_PRIMARY){
+                cout << "[Testing] Primary failing after receiving ack from backup " << endl;
                 exit(1);
             }
 
@@ -168,12 +167,6 @@ class HafsImpl final : public Hafs::Service {
                 cout << "Committed on both primary and backup, at-most once semantics" << endl;
                 exit(1);
             }
-            
-            else if (address == 20480 && mask == "backupFail" && role == HeartBeatResponse_Role_BACKUP) {
-                cout << "Backup failure! Messages are being added on queue" << endl;
-                exit(1);
-            }
-
         }
 
 

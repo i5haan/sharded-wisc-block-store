@@ -4,11 +4,16 @@
 #include<iostream>
 #include<vector>
 #include "client_lib.h"
+#include "timer.h"
+#include "metric.h"
+
+using namespace std;
 
 /*
 Single Client 
 All writes differnt address
 */
+Metrics metric1,metric2;
 int SingleClientConsistencyDiffAddr()
 {
     HafsClientFactory client("155.98.36.86:8093", "155.98.36.88:8094");
@@ -19,11 +24,15 @@ int SingleClientConsistencyDiffAddr()
     // // cout << "Data read: " << res << endl;
 
     vector<int> UsedAddr;
-
+    Timer2 time;
     for(int i = 0; i < 10000; i++) {
         int CharId = rand()%26;
         string data = string(4096, 'a'+ CharId);
+        time.start();
         client.Write(i*4096, data);
+        time.stop();
+        cout<<time.get_time_in_nanoseconds()<<endl;
+        metric1.add(time.get_time_in_nanoseconds());
         UsedAddr.push_back(i*4096);
         /*client.Read(i*4096, &res);
 
@@ -33,6 +42,8 @@ int SingleClientConsistencyDiffAddr()
             return 0;
         }*/
     }
+    //cout<<time.get_time_in_nanoseconds()<<endl;
+    
     for(int i=0;i<UsedAddr.size();i++)
     {
         if(client.CheckConsistancy(UsedAddr[i])!=true)
@@ -58,10 +69,16 @@ int SingleClientConsistencySameAddr(int k)
     // // client.Read(0, &res);
     // // cout << "Data read: " << res << endl;
     int Addr = k*4096;
+    Timer2 time;
+    
     for(int i = 0; i < 10000; i++) {
         int CharId = rand()%26;
         string data = string(4096, 'a'+ CharId);
+        time.start();
         client.Write(Addr, data);
+        time.stop();
+        cout<<time.get_time_in_nanoseconds()<<endl;
+        metric2.add(time.get_time_in_nanoseconds());
         if(client.CheckConsistancy(Addr)!=true)
             return 0;
         /*client.Read(i*4096, &res);
@@ -72,6 +89,9 @@ int SingleClientConsistencySameAddr(int k)
             return 0;
         }*/
     }
+    
+    //cout<<time.get_time_in_nanoseconds()<<endl;
+    
     if(client.CheckConsistancy(Addr)!=true)
         return 0;
     usleep(10*1000000);

@@ -13,7 +13,7 @@
 #include <ctime>
 #include <chrono>
 
-#include "client_imp.h"
+#include "client_impl.h"
 #include "block_manager.h"
 
 using namespace std;
@@ -38,6 +38,22 @@ class Replicator {
             thread_object.detach();
         }
 
+        void consumerSubThread() {
+            while(!pendingBlocks.empty()) {
+                int nextPendingAddress = removeAndGetLastPendingBlock();
+                cout<< "[Replicator] Processing pending block [" << nextPendingAddress <<  "]" << endl;
+                string data;
+                blockManager.read(nextPendingAddress, &data);
+                if(!otherMirrorClient.ReplicateBlock(nextPendingAddress, data)) {
+                    cout<< "[Replicator] Block [" << nextPendingAddress <<  "] failed while trying to replicate, requeueing!" << endl;
+                    addPendingBlock(nextPendingAddress);
+                } else if(!otherMirrorClient.CommitBlock(nextPendingAddress)) {
+                    cout<< "[Replicator] Block [" << nextPendingAddress <<  "] failed while trying to commit, requeueing!" << endl;
+                    addPendingBlock(nextPendingAddress);
+                }
+            }
+        }
+
         void consumer() {
             while(true) {
                 if(!otherMirrorClient.getIsAlive()) {
@@ -45,20 +61,27 @@ class Replicator {
                     health = HeartBeatResponse_Health_SINGLE_REPLICA_AHEAD;
                     usleep(2*1000000);
                 } else if(!pendingBlocks.empty()) {
+                    std::chrono::time_point<std::chrono::system_clock> start, end;
+
+                    start = std::chrono::system_clock::now();
+                    int size = pendingBlocks.size();
+
                     health = HeartBeatResponse_Health_REINTEGRATION_AHEAD;
-                    while(!pendingBlocks.empty()) {
-                        int nextPendingAddress = removeAndGetLastPendingBlock();
-                        cout<< "[Replicator] Processing pending block [" << nextPendingAddress <<  "]" << endl;
-                        string data;
-                        blockManager.read(nextPendingAddress, &data);
-                        if(!otherMirrorClient.ReplicateBlock(nextPendingAddress, data)) {
-                            cout<< "[Replicator] Block [" << nextPendingAddress <<  "] failed while trying to replicate, requeueing!" << endl;
-                            addPendingBlock(nextPendingAddress);
-                        } else if(!otherMirrorClient.CommitBlock(nextPendingAddress)) {
-                            cout<< "[Replicator] Block [" << nextPendingAddress <<  "] failed while trying to commit, requeueing!" << endl;
-                            addPendingBlock(nextPendingAddress);
-                        }
+                    int numCPU = sysconf(_SC_NPROCESSORS_ONLN);
+                    vector<thread> threads;
+                    for(int i = 0; i < numCPU; i++) {
+                        // thread ;
+                        threads.push_back(thread(&Replicator::consumerSubThread, this));
                     }
+
+                    for(thread & t: threads) {
+                        t.join();
+                    }
+
+                    end = std::chrono::system_clock::now();
+                    std::chrono::duration<double> elapsed_seconds = end - start;
+                    std::cout << "[Replicator] Time taken to process Pending Queue of size: " << size << " is " << elapsed_seconds.count() << "s\n";
+
                 } else {
                     if(otherMirrorClient.getReplicatorHealth() == HeartBeatResponse_Health_REINTEGRATION_AHEAD){
                         cout << "[Replicator] Pending queue is empty, sleeping for 2 seconds, marking mirror as REINTEGRATION_AHEAD since other mirror has queue" << endl;

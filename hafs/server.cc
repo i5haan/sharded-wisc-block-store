@@ -17,7 +17,6 @@
 #include <mutex>          // std::mutex
 
 #include "hafs.grpc.pb.h"
-// #include "client_imp.h"
 // #include "block_manager.h"
 #include "common.cc"
 #include "replicator.h"
@@ -69,6 +68,9 @@ class HafsImpl final : public Hafs::Service {
 
         Status Write(ServerContext *context, const WriteRequest *req, Response *res) override {
             std::cout << "[Server] (Write) addr=" << req->address() << std::endl;
+            crash(req->address(), "primaryFail");
+            crash(req->address(), "backupFail");
+
             blockManager.lockAddress(req->address());
             if(!replicator.otherMirrorClient.getIsAlive()) {
                 std::cout << "[Server](write) Other Replica down, sending block to replicator after local write!!" << std::endl;
@@ -78,12 +80,15 @@ class HafsImpl final : public Hafs::Service {
                 replicator.addPendingBlock(req->address());
                 res->set_status(Response_Status_VALID);
                 blockManager.unlockAddress(req->address());
+
                 return Status::OK;
             } else {
                 // std::cout << "Persisting block to other replica!" << std::endl;
                 if(replicator.otherMirrorClient.ReplicateBlock(req->address(), req->data())) {
+                    crash(req->address(), "primaryFailAfterBackupTemp");
                     blockManager.write(req->address(), req->data());
                     if(replicator.otherMirrorClient.CommitBlock(req->address())) {
+                        crash(req->address(), "commitBlockInconsistency");
                         blockManager.commit(req->address());
                         res->set_status(Response_Status_VALID);
                         blockManager.unlockAddress(req->address());
@@ -142,6 +147,30 @@ class HafsImpl final : public Hafs::Service {
                 res->set_status(Response_Status_INVALID);
             return Status::OK;
         }
+
+        void crash(int address, string mask){
+            if (address == 4096 && mask == "primaryFail" && role == HeartBeatResponse_Role_PRIMARY){
+                cout << "[Testing] Primary failing before sending request to backup" << endl;
+                exit(1);
+            }
+
+
+            if (address == 8192 && mask == "primaryFailAfterBackupTemp" && role == HeartBeatResponse_Role_PRIMARY){
+                cout << "[Testing] Primary failing after receiving ack from backup " << endl;
+                exit(1);
+            }
+
+            else if (address == 12288 && mask == "commitBlockInconsistency" && role == HeartBeatResponse_Role_PRIMARY) {
+                cout << "Committed on backup, present in primary temp. Inconsistency :(" << endl;
+                exit(1);
+            }
+
+            else if (address == 16384 && mask == "onlyAckMissing" && role == HeartBeatResponse_Role_PRIMARY) {
+                cout << "Committed on both primary and backup, at-most once semantics" << endl;
+                exit(1);
+            }
+        }
+
 
 };
 

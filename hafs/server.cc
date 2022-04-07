@@ -69,6 +69,7 @@ class HafsImpl final : public Hafs::Service {
         Status Write(ServerContext *context, const WriteRequest *req, Response *res) override {
             std::cout << "[Server] (Write) addr=" << req->address() << std::endl;
             crash(req->address(), "primaryFail");
+            crash(req->address(), "backupFail");
 
             blockManager.lockAddress(req->address());
             if(!replicator.otherMirrorClient.getIsAlive()) {
@@ -87,9 +88,11 @@ class HafsImpl final : public Hafs::Service {
                     crash(req->address(), "primaryFailAfterBackupTemp");
                     blockManager.write(req->address(), req->data());
                     if(replicator.otherMirrorClient.CommitBlock(req->address())) {
+                        crash(req->address(), "commitBlockInconsistency");
                         blockManager.commit(req->address());
                         res->set_status(Response_Status_VALID);
                         blockManager.unlockAddress(req->address());
+                        crash(req->address(), "onlyAckMissing");
                         return Status::OK;
                     }
                     res->set_status(Response_Status_INVALID);
@@ -156,10 +159,21 @@ class HafsImpl final : public Hafs::Service {
                 exit(1);
             }
 
-            else if (address == 12288 && mask == "onlyAckMissing" && role == HeartBeatResponse_Role_PRIMARY) {
-                cout << "Primary failing just before sending ack (Dirty data on both primary and backup)" << endl;
+            else if (address == 12288 && mask == "commitBlockInconsistency" && role == HeartBeatResponse_Role_PRIMARY) {
+                cout << "Committed on backup, present in primary temp. Inconsistency :(" << endl;
                 exit(1);
             }
+
+            else if (address == 16384 && mask == "onlyAckMissing" && role == HeartBeatResponse_Role_PRIMARY) {
+                cout << "Committed on both primary and backup, at-most once semantics" << endl;
+                exit(1);
+            }
+            
+            else if (address == 20480 && mask == "backupFail" && role == HeartBeatResponse_Role_BACKUP) {
+                cout << "Backup failure! Messages are being added on queue" << endl;
+                exit(1);
+            }
+
         }
 
 

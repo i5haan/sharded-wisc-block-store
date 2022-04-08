@@ -4,7 +4,7 @@ using namespace std;
 
 int main()
 {
-    int code = SingleClientConsistencySameAddr(12);
+    int code = SingleClientConsistencySameAddr(12,10);
     if(code==0)
         cout<<"Multi Consistancy failed\n";
     else

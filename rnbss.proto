@@ -5,6 +5,7 @@ service Rnbss
     rpc isAlive(Request) returns (Response) {}
     rpc Read(ReadRequest) returns (DataBlock) {}
     rpc Write(WriteRequest) returns (Response) {}
+    rpc CheckConsistancy(ReadRequest) returns (CheckSum) {}
 }
 message Request
 {
@@ -35,4 +36,8 @@ message WriteRequest
 {
     int32 address = 1;
     string data = 2;
+}
+message CheckSum
+{
+    string hash = 1;
 }

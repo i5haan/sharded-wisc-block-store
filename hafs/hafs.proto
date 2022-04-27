@@ -33,6 +33,7 @@ message HeartBeatResponse
     Role role      = 1;
     Status status  = 2;
     Health health  = 3;
+    int32 blockload = 4;
 
 }
 

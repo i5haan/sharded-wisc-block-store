@@ -16,7 +16,7 @@ All writes differnt address
 Metrics metric1,metric2;
 int SingleClientConsistencyDiffAddr(int NumWrites)
 {
-    HafsClientFactory client("128.105.144.230:8093", "128.105.144.230:8094");
+    HafsClientFactory client("155.98.36.86:8093", "155.98.36.88:8094");
     //HafsClient client1(grpc::CreateChannel("155.98.36.86:8093", grpc::InsecureChannelCredentials()), "155.98.36.86:8093", false);
     //HafsClient client2(grpc::CreateChannel("155.98.36.88:8094", grpc::InsecureChannelCredentials()), "155.98.36.88:8094", false);
     string res;
@@ -63,7 +63,7 @@ All address Same
 */
 int SingleClientConsistencySameAddr(int k,int NumWrites)
 {
-    HafsClientFactory client("128.105.144.230:8093", "128.105.144.230:8094");
+    HafsClientFactory client("155.98.36.86:8093", "155.98.36.88:8094");
     //HafsClient client1(grpc::CreateChannel("155.98.36.86:8093", grpc::InsecureChannelCredentials()), "155.98.36.86:8093", false);
     //HafsClient client2(grpc::CreateChannel("155.98.36.88:8094", grpc::InsecureChannelCredentials()), "155.98.36.88:8094", false);
     // // client.Read(0, &res);

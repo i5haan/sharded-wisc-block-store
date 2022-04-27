@@ -23,7 +23,7 @@ const int BLOCK_PER_DIVIDER  = 2048;
 const int MAX_BLOCK          = BLOCK_PER_DIVIDER*BLOCK_DIVIDER_SIZE;
 
 mutex blockLocks[MAX_BLOCK];
-mutex CommittedLogLock;
+
 
 class BlockManager {
     private:
@@ -43,38 +43,15 @@ class BlockManager {
         int getBlockOffset(int blockNumber) {
             return blockNumber % BLOCK_DIVIDER_SIZE;
         }
-
+        
     public:
-        unordered_map<string,int> hashCommittedBlocks;
-
         BlockManager() {
 
-        }
-        void InitHash(string filePath)
-        {
-            fstream file;
-            file.open(filePath,std::ios_base::in);
-            if(file.is_open())
-            {
-                string temp;
-                while(getline(file, temp))
-                {
-                    hashCommittedBlocks[temp]=1;
-                }
-                file.close();           
-            }
         }
         BlockManager(string fsRoot) {
             this->fsRoot = fsRoot;
             mkdir(fsRoot.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
             mkdir((fsRoot + "-tmp").c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
-
-            //Init Committed Block Addr
-            string CommittedLogPath = fsRoot + "/CommitedLog";
-            CommittedLogLock.lock();
-            InitHash(CommittedLogPath);
-            CommittedLogLock.unlock();
-
         }
 
         // vector<int
@@ -339,26 +316,5 @@ class BlockManager {
         string CalCheckSum(string data)
         {
             return sha256(data);
-        }
-        bool LogCommittedBlocks(int addr)
-        {
-            //Block already present in CommitedList
-            string data = to_string(addr);
-            if(hashCommittedBlocks.find(data)!=hashCommittedBlocks.end())
-            {
-                return true;
-            }
-            else
-            {
-                string CommittedLogPath = fsRoot + "/CommitedLog";
-                ofstream file;
-                CommittedLogLock.lock();
-                file.open(CommittedLogPath,std::ios_base::app);
-                file<<data<<endl;
-                file.close();
-                hashCommittedBlocks[data]=1;
-                CommittedLogLock.unlock();
-            }
-
         }         
 };

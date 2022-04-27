@@ -123,7 +123,6 @@ class HafsImpl final : public Hafs::Service {
 
             blockManager.commit(req->address());
             res->set_status(Response_Status_VALID);
-            blockManager.LogCommittedBlocks(req->address());
             blockManager.unlockAddress(req->address());
             
             return Status::OK;

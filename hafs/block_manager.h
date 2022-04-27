@@ -103,10 +103,14 @@ class BlockManager {
 
         bool commit(int addr) {
             if(!isAlligned(addr)) {
-                return unallignedCommit(addr);
+                
+                bool status = unallignedCommit(addr);
+                LogCommittedBlocks(addr);
+                return status;
             }
-
-            return allignedCommit(addr);
+            bool status = allignedCommit(addr);
+            LogCommittedBlocks(addr);
+            return status;
         }
 
         bool unallignedCommit(int addr) {

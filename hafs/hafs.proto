@@ -9,6 +9,12 @@ service Hafs
     rpc CommitBlock(WriteRequest) returns (Response) {}
     rpc CheckConsistancy(ReadRequest) returns (Response) {}
 }
+
+service Master
+{
+    rpc MasterStatus(Request) returns (Response) {}
+    rpc ActiveConnections(Request) returns (stream Connection) {}
+}
 message Request
 {
 
@@ -65,4 +71,11 @@ message WriteRequest
 {
     int32 address = 1;
     string data   = 2;
+}
+
+message Connection
+{
+    int32 id;
+    string primaryAddr;
+    string backupAddr;
 }

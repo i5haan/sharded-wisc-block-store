@@ -52,6 +52,7 @@ class HafsImpl final : public Hafs::Service {
         Status HeartBeat(ServerContext *context, const Request *req, HeartBeatResponse *res) override {
             res->set_role(this->role);
             res->set_health(replicator.getHealth());
+            res->set_blockload(blockManager.hashCommittedBlocks.size());
             return Status::OK;
         }
 
@@ -80,7 +81,6 @@ class HafsImpl final : public Hafs::Service {
                 replicator.addPendingBlock(req->address());
                 res->set_status(Response_Status_VALID);
                 blockManager.unlockAddress(req->address());
-
                 return Status::OK;
             } else {
                 // std::cout << "Persisting block to other replica!" << std::endl;
@@ -123,8 +123,9 @@ class HafsImpl final : public Hafs::Service {
 
             blockManager.commit(req->address());
             res->set_status(Response_Status_VALID);
-
+            blockManager.LogCommittedBlocks(req->address());
             blockManager.unlockAddress(req->address());
+            
             return Status::OK;
         }
 
@@ -149,7 +150,7 @@ class HafsImpl final : public Hafs::Service {
         }
 
         void crash(int address, string mask){
-            if (address == 4096 && mask == "primaryFail" && role == HeartBeatResponse_Role_PRIMARY){
+            /*if (address == 4096 && mask == "primaryFail" && role == HeartBeatResponse_Role_PRIMARY){
                 cout << "[Testing] Primary failing before sending request to backup" << endl;
                 exit(1);
             }
@@ -168,7 +169,7 @@ class HafsImpl final : public Hafs::Service {
             else if (address == 16384 && mask == "onlyAckMissing" && role == HeartBeatResponse_Role_PRIMARY) {
                 cout << "Committed on both primary and backup, at-most once semantics" << endl;
                 exit(1);
-            }
+            }*/
         }
 
 

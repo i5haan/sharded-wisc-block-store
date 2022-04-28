@@ -8,6 +8,7 @@ service Hafs
     rpc ReplicateBlock(WriteRequest) returns (Response) {}
     rpc CommitBlock(WriteRequest) returns (Response) {}
     rpc CheckConsistancy(ReadRequest) returns (Response) {}
+    rpc CheckAlive(Request) returns (Response) {}
 }
 
 service Master
@@ -75,7 +76,7 @@ message WriteRequest
 
 message Connection
 {
-    int32 id;
-    string primaryAddr;
-    string backupAddr;
+    int32 id = 1;
+    string primaryAddr = 2;
+    string backupAddr = 3;
 }

@@ -148,6 +148,13 @@ class HafsImpl final : public Hafs::Service {
             return Status::OK;
         }
 
+        Status CheckAlive(ClientContext *context, Request *req, Response *res)  
+        {
+            std::cout <<"[Server] Sending reply for check alive request"<<std::endl;
+            res->set_status(Response_Status_VALID);
+            return Status::OK;
+        }
+
         void crash(int address, string mask){
             /*if (address == 4096 && mask == "primaryFail" && role == HeartBeatResponse_Role_PRIMARY){
                 cout << "[Testing] Primary failing before sending request to backup" << endl;

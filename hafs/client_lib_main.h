@@ -70,4 +70,4 @@ class HafsClientShardFactory {
         string master_address;
         vector<HafsClientFactory> shard_servers;
         
-}
+};

@@ -32,7 +32,7 @@ class HafsClient {
     public:
         HafsClient() {}
         HafsClient(std::shared_ptr<Channel> channel, std::string address, bool isAlive): stub_(Hafs::NewStub(channel)) {
-            std::cout << "[HafsCLient] Starting Hafs Client Instance!" <<std::endl;
+            // std::cout << "[HafsCLient] Starting Hafs Client Instance!" <<std::endl;
             this->address = address;
             this->isAlive = isAlive;
             // Get first HearBeat here before starting thread

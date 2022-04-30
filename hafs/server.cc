@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
 #include <chrono>
 #include <thread>
 #include <unordered_map>
@@ -21,6 +22,7 @@
 #include "common.cc"
 #include "replicator.h"
 #include "SHA256.cc"
+#include "client_lib_main.h"
 using ::Request;
 using ::HeartBeatResponse;
 using ::ReadRequest;
@@ -39,11 +41,14 @@ class HafsImpl final : public Hafs::Service {
         HeartBeatResponse_Role role; 
         BlockManager blockManager;
         Replicator replicator;
+        HafsClientShardFactory MasterClient;
+
     public:
         int64_t counter = 0;
-        explicit HafsImpl(std::string otherMirrorAddress, HeartBeatResponse_Role role, BlockManager blockManager): replicator(otherMirrorAddress, blockManager) {
+        explicit HafsImpl(std::string pAddress,std::string otherMirrorAddress, std::string masterAddress, HeartBeatResponse_Role role, BlockManager blockManager): replicator(otherMirrorAddress, blockManager), MasterClient(masterAddress) {
             this->role = role;
             this->blockManager = blockManager;
+            MasterClient.AddShard(pAddress,otherMirrorAddress);
             // this->replicator = replicator;
             std::cout << "[Server] Starting up the Ha FS server!" << std::endl;
 
@@ -179,8 +184,9 @@ int main(int argc, char **argv) {
     std::string fsPath;
     std::string role;
     std::string otherMirrorAddress;
+    std::string masterAddress;
 
-    if(!getArg(argc, argv, "SAddr", &serverAddr, 1) || !getArg(argc, argv, "path", &fsPath, 2) || !getArg(argc, argv, "role", &role, 3) || !getArg(argc, argv, "MAddr", &otherMirrorAddress, 4)) {
+    if(!getArg(argc, argv, "SAddr", &serverAddr, 1) || !getArg(argc, argv, "path", &fsPath, 2) || !getArg(argc, argv, "role", &role, 3) || !getArg(argc, argv, "RAddr", &otherMirrorAddress, 4) || !getArg(argc, argv, "MAddr", &masterAddress, 5)) {
         exit(1);
     }
 
@@ -195,7 +201,7 @@ int main(int argc, char **argv) {
     }
 
     std::string server_address = serverAddr;
-    HafsImpl service(otherMirrorAddress, roleEnum, BlockManager(fsPath));
+    HafsImpl service(server_address, otherMirrorAddress, masterAddress, roleEnum, BlockManager(fsPath));
     ServerBuilder builder;
     // HafsClient client(grpc::CreateChannel("0.0.0.0:8091", grpc::InsecureChannelCredentials()), "0.0.0.0:8091", false);
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());

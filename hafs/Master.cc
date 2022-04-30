@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
 #include <chrono>
 #include <thread>
 #include <unordered_map>
@@ -29,20 +30,22 @@ using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
+using grpc::ServerWriter;
+
+mutex ConfigFileLock;
 
 #define MAXPOD 10
 struct Pod 
 {
-    std::string primaryAddr;
-    std::string backupAddr;
+    int id;
+    std::string primaryaddr;
+    std::string backupaddr;
 };
 class MasterImpl final : public Master::Service {
-    private:
-    std::vector<Pod> PodList(MAXPOD);
     public:
         int32_t PbPairCount=0;
-        int32_t PbPairActiveCount=0;
-        HafsClient 
+        std::string ConfigFilePath;
+        std::unordered_map<std::string,Pod> PodList;
         void LoadConfig(string filePath)
         {
             std::fstream file;
@@ -61,26 +64,100 @@ class MasterImpl final : public Master::Service {
                     {
                         if(flag==1)
                         {
-                            newPod.primaryAddr=word;
+                            newPod.id = stoi(word);
                             flag=2;
-                        }    
+                        }
                         else if(flag==2)
                         {
-                            newPod.backupAddr=word;
+                            newPod.primaryaddr=word;
+                            flag=3;
+                        }    
+                        else if(flag==3)
+                        {
+                            newPod.backupaddr=word;
                         }
     
                     }
-                    this->PodList[PbPairCount++]=newPod;
+                    this->PodList[newPod.primaryaddr]=newPod;
                     
                 }
                 file.close();           
             }
         }
-        explicit MasterImpl()
+        explicit MasterImpl(std::string FilePath)
         {
-            std::cout << "[Server] Starting up the Ha FS server!" << std::endl;
-            std::string ConfigFilePath = "/user/avkumar/Avinash/ConfigFile.txt"
+            std::cout << "[Master] Starting up the Ha FS server!" << std::endl;
+            ConfigFilePath = FilePath;
             LoadConfig(ConfigFilePath);
         }
+        Status AckMaster(ServerContext *context, const Connection *req, Response *res) override {
+            std::string pAddress = req->primaryaddr();
+            std::string sAddress = req->backupaddr();
+            Pod newPod;
+            if(PodList.find(pAddress)==PodList.end())
+            {
+                if(PbPairCount+1 == MAXPOD)
+                {
+                    std::cout << "[Master] MAX shard limit reached" << std::endl;
+                    res->set_status(Response_Status_VALID);
+                    return Status::OK;
+                }
 
+                std::string temp = to_string(PbPairCount+1)+' '+pAddress+' '+sAddress;
+                ofstream file;
+                ConfigFileLock.lock();
+                file.open(ConfigFilePath,std::ios_base::app);
+                file<<temp<<endl;
+                file.close();
+                newPod.primaryaddr = pAddress;
+                newPod.id = PbPairCount+1;
+                newPod.backupaddr = sAddress;
+                PodList[pAddress] = newPod;
+                PbPairCount++;
+                ConfigFileLock.unlock();
+
+            }
+            res->set_status(Response_Status_VALID);
+            return Status::OK;
+        }
+        Status ActiveConnections(ServerContext *context, const Request *req, ServerWriter<Connection> *res) override {
+            for(auto it = PodList.begin();it!=PodList.end();it++)
+            {
+                Pod tempPod = it->second;
+                Connection ele;
+                ele.set_id(tempPod.id);
+                ele.set_primaryaddr(tempPod.primaryaddr);
+                ele.set_backupaddr(tempPod.backupaddr);
+                res->Write(ele);
+            }
+            return Status::OK;
+        }
+
+
+};
+
+int main(int argc, char **argv) {
+    std::string serverAddr;
+    std::string fsPath;
+    std::string role;
+    std::string otherMirrorAddress;
+    std::string masterAddress;
+
+    if(!getArg(argc, argv, "SAddr", &serverAddr, 1)) {
+        exit(1);
+    }
+
+    HeartBeatResponse_Role roleEnum;
+
+    std::string server_address = serverAddr;
+    std::string ConfigFilePath = "/user/avkumar/Avinash/ConfigFile.txt";
+    MasterImpl service(ConfigFilePath);
+    ServerBuilder builder;
+    // HafsClient client(grpc::CreateChannel("0.0.0.0:8091", grpc::InsecureChannelCredentials()), "0.0.0.0:8091", false);
+    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+    builder.RegisterService(&service);
+    std::unique_ptr<Server> server(builder.BuildAndStart());
+    std::cout << "Server listening on " << server_address << std::endl;
+    server->Wait();
+    return 0;
 }

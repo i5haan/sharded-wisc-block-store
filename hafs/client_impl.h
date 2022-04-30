@@ -1,3 +1,5 @@
+#ifndef CLIENT_IMPL_H
+#define CLIENT_IMPL_H
 #include <errno.h>
 #include <fcntl.h>
 #include <grpc/grpc.h>
@@ -176,3 +178,5 @@ class HafsClient {
         bool isAlive;
         HeartBeatResponse_Health replicatorHealth;
 };
+
+#endif

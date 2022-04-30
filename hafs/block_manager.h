@@ -12,6 +12,7 @@
 #include <ios>
 #include <cstdio>
 #include <fstream>
+#include <sstream>
 #include <utility>
 
 #include "SHA256.h"

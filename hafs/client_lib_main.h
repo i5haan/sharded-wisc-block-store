@@ -28,7 +28,49 @@ class HafsClientShardFactory {
                     shard_servers.push_back(HafsClientFactory(shards[i].primaryaddr(), shards[i].backupaddr()));
                 }
             }
+            std::thread thread_object(&HafsClientShardFactory::balanceLoad, this);
+            thread_object.detach();
 
+
+        }
+        void balanceLoad()
+        {
+            while(true)
+            {
+                usleep(10000000);
+                int oldShardCount = this->shard_servers.size();
+                vector<Connection> shards = getShards();
+                int newShardCount = shards.size();
+                if(newShardCount>oldShardCount)
+                {
+                    //Checkfor BlockCount in Shards
+                    bool ShuffleFlag=false;
+                    for(int i=0;i<oldShardCount;i++)
+                    {
+                        if(this->shard_servers[i].CanShuffle())
+                        {
+                            ShuffleFlag=true;
+                            break;
+                        }
+                    }   
+                    if(ShuffleFlag)
+                    {
+                        for(int i=0;i<oldShardCount;i++)
+                        {
+                            //This is sequential thing about making this request parallel
+                            ShuffleFlag = ShuffleFlag & this->shard_servers[i].TriggerShuffle(newShardCount);
+                        } 
+                    }
+                    if(ShuffleFlag)
+                    {
+                        //Update local shard client list with new connection
+                        this->shard_servers.push_back(HafsClientFactory(shards[newShardCount-1].primaryaddr(), shards[newShardCount-1].backupaddr()));
+                    }
+                }
+
+
+                
+            }
         }
 
         vector<Connection> getShards() {

@@ -2,8 +2,7 @@
 #define MAXPOD 10
 using namespace std;
 
-using ::Connection;
-using ::Response;
+#define BLOCK_SIZE 4096
 
 class HafsClientShardFactory {
 
@@ -18,6 +17,12 @@ class HafsClientShardFactory {
             // Get all shards from Master for the first time
             vector<Connection> shards = getShards();
 
+            // Connect to all shard servers for the first time
+            connectToShards(shards);
+
+        }
+
+        void connectToShards(vector<Connection> shards){
             if (shards.size() == 0) {
                 cout << "[HafsCLient] [Error] No shards found in Master" << endl;
             }
@@ -25,14 +30,16 @@ class HafsClientShardFactory {
                 cout << "[HafsCLient] Found " << shards.size() << " active shards in Master" << endl;
                 //Connect client to all shards
                 for(int i = 0; i < shards.size(); i++) {
-                    shard_servers.push_back(HafsClientFactory(shards[i].primaryaddr(), shards[i].backupaddr()));
+                    if (shard_servers.find(shards[i].id()) == shard_servers.end()) {
+                        shard_servers[shards[i].id()] = HafsClientFactory(shards[i].primaryaddr(), shards[i].backupaddr());
+                    }
                 }
             }
 
         }
 
         vector<Connection> getShards() {
-            vector<Connection> shards(MAXPOD);
+            vector<Connection> shards;
             // Get all shards from Master
             Request request;
             Connection pods;
@@ -40,7 +47,7 @@ class HafsClientShardFactory {
             std::unique_ptr<ClientReader<Connection> > reader(
                 master_stub_->ActiveConnections(&context, request));
             while (reader->Read(&pods)) {
-                shards[pods.id()] = pods;
+                shards.push_back(pods);
             }
             Status status = reader->Finish();
 
@@ -53,41 +60,53 @@ class HafsClientShardFactory {
             return shards;
         }
 
-        bool AddShard(std::string pAddress,std::string bAddress)
-        {
-            Connection request;
-            Response reply;
-            request.set_primaryaddr(pAddress);
-            request.set_backupaddr(bAddress);
-
-            ClientContext context;
-
-            Status status = master_stub_->AckMaster(&context, request, &reply);
-
-            if (!status.ok()) {
-                std::cout << "[HafsMasterCLient] AckMaster: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
-                return false;
-            }
-            return true;
-        }
-
         bool Write(int addr, std::string data) {
-            // cout << "[HafsCLient] Write to shard[" << addr << "]" << endl;
-            //get shar_nmbr from addr
-            //return shard_servers[shard_nmbr].Write(addr, data);
-            return true;
+
+            int block1 = addr / BLOCK_SIZE;
+            int block2 = (addr % BLOCK_SIZE == 0) ? -1 : block1 + 1;
+
+            int shard_id = getShardNmbrAndLogicalAddr(block1);
+            if(block2 != -1) { //unaligned write
+                int shard_id2 = getShardNmbrAndLogicalAddr(block2);
+                string data2 = data.substr(BLOCK_SIZE - (addr % BLOCK_SIZE), data.size() - (BLOCK_SIZE - (addr % BLOCK_SIZE)));
+                data = data.substr(0, BLOCK_SIZE - (addr % BLOCK_SIZE));
+            }
+
+            return shard_servers[shard_id].Write(addr, data) && block2 != -1 ? shard_servers[shard_id2].Write(block2 * BLOCK_SIZE, data2) : true;
         }
 
         bool Read(int addr, std::string& data) {
-            // cout << "[HafsCLient] Read from shard[" << addr << "]" << endl;
-            //get shar_nmbr from addr
-            //return shard_servers[shard_nmbr].Read(addr, data);
-            return true;
+            int block1 = addr / BLOCK_SIZE;
+            int block2 = (addr % BLOCK_SIZE == 0) ? -1 : block1 + 1;
+
+            int shard_id = getShardNmbrAndLogicalAddr(block1);
+            if(block2 != -1) { //unaligned read
+                int shard_id2 = getShardNmbrAndLogicalAddr(block2);
+                string data2;
+                string data1;
+            }
+            if (shard_servers[shard_id].Read(addr, &data1) && block2 != -1 ? shard_servers[shard_id2].Read(block2 * BLOCK_SIZE, &data2) : true) {
+                if (block2 != -1) {
+                    data = data1 + data2.substr(0, (addr % BLOCK_SIZE));  /* check: server should send BLOCK_SIZE data for second request because it treats it as aligned read?
+                                                                             shouldn't be an issue, because only 4k data, otherwise, add another arg for rpc - size? */
+                                                                         
+                }
+                else {
+                    data = data1;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        int  getShardNmbrAndLogicalAddr(int block) {
+            cout << "[HafsCLient] Get shard number for block[" << block << "]" << endl;
+            return block % shard_servers.size() ;
         }
 
     private:
         std::unique_ptr<Master::Stub> master_stub_;
         string master_address;
-        vector<HafsClientFactory> shard_servers;
+        unordered_map<int, HafsClientFactory> shard_servers;
         
 };

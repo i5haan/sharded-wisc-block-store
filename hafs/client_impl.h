@@ -13,6 +13,7 @@
 #include <thread>
 #include <ctime>
 #include <chrono>
+#include <cmath>
 
 #include <iostream>
 
@@ -23,6 +24,8 @@ using ::HeartBeatResponse;
 using ::ReadRequest;
 using ::ReadResponse;
 using ::WriteRequest;
+using ::Connection;
+using ::Response;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::ClientReader;
@@ -33,14 +36,19 @@ using grpc::Status;
 class HafsClient {
     public:
         HafsClient() {}
-        HafsClient(std::shared_ptr<Channel> channel, std::string address, bool isAlive): stub_(Hafs::NewStub(channel)) {
+        HafsClient(std::shared_ptr<Channel> channel, std::string address, bool isAlive, bool isMasterServerConnection = false): isMasterServerConnection ? master_stub_(Master::NewStub(channel)): stub_(Hafs::NewStub(channel)) {
             // std::cout << "[HafsCLient] Starting Hafs Client Instance!" <<std::endl;
             this->address = address;
             this->isAlive = isAlive;
-            // Get first HearBeat here before starting thread
-            checkHeartBeat();
-            std::thread thread_object(&HafsClient::startHeartBeat, this);
-            thread_object.detach();
+
+            if (!isMasterServerConnection) {
+
+                // Get first HearBeat here before starting thread
+                checkHeartBeat();
+                std::thread thread_object(&HafsClient::startHeartBeat, this);
+                thread_object.detach();
+
+            }
         }
         HafsClient(std::string address) {
             HafsClient(grpc::CreateChannel(address, grpc::InsecureChannelCredentials()), address, false);
@@ -172,8 +180,28 @@ class HafsClient {
             return replicatorHealth;
         }
 
+        //server - master functions
+        bool AddShard(std::string pAddress,std::string bAddress)
+        {
+            Connection request;
+            Response reply;
+            request.set_primaryaddr(pAddress);
+            request.set_backupaddr(bAddress);
+
+            ClientContext context;
+
+            Status status = master_stub_->AckMaster(&context, request, &reply);
+
+            if (!status.ok()) {
+                std::cout << "[HafsMasterCLient] AckMaster: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
+                return false;
+            }
+            return true;
+        }
+
     private:
         std::unique_ptr<Hafs::Stub> stub_;
+        std::unique_ptr<Master::Stub> master_stub_;
         std::string address;
         bool isAlive;
         HeartBeatResponse_Health replicatorHealth;

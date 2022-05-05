@@ -110,7 +110,7 @@ class MasterImpl final : public Master::Service {
                 file<<temp<<endl;
                 file.close();
                 newPod.primaryaddr = pAddress;
-                newPod.id = PbPairCount+1;
+                newPod.id = PbPairCount+1; // check: id starts from 1?
                 newPod.backupaddr = sAddress;
                 PodList[pAddress] = newPod;
                 PbPairCount++;

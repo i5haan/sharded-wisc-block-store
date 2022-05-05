@@ -96,21 +96,21 @@ class MasterImpl final : public Master::Service {
             Pod newPod;
             if(PodList.find(pAddress)==PodList.end())
             {
-                if(PbPairCount+1 == MAXPOD)
+                if(PbPairCount == MAXPOD)
                 {
                     std::cout << "[Master] MAX shard limit reached" << std::endl;
                     res->set_status(Response_Status_VALID);
                     return Status::OK;
                 }
 
-                std::string temp = to_string(PbPairCount+1)+' '+pAddress+' '+sAddress;
+                std::string temp = to_string(PbPairCount)+' '+pAddress+' '+sAddress;
                 ofstream file;
                 ConfigFileLock.lock();
                 file.open(ConfigFilePath,std::ios_base::app);
                 file<<temp<<endl;
                 file.close();
                 newPod.primaryaddr = pAddress;
-                newPod.id = PbPairCount+1;
+                newPod.id = PbPairCount;
                 newPod.backupaddr = sAddress;
                 PodList[pAddress] = newPod;
                 PbPairCount++;

@@ -22,6 +22,7 @@
 #include "common.cc"
 #include "replicator.h"
 #include "SHA256.cc"
+#include "client_lib_main.h"
 using ::Request;
 using ::HeartBeatResponse;
 using ::ReadRequest;
@@ -40,7 +41,7 @@ class HafsImpl final : public Hafs::Service {
         HeartBeatResponse_Role role; 
         BlockManager blockManager;
         Replicator replicator;
-        HafsClient MasterClient;
+        HafsClientShardFactory MasterClient;
 
     public:
         int64_t counter = 0;

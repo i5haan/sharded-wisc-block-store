@@ -85,28 +85,13 @@ class HafsClient {
             return response;
         }
 
-        bool Write(int addr, std::string data) {
-
-            //Need to Modify this to ensure new logical and actual address
-            /*
-                Let N be the active no of servers with max storage size M
-                1. Figure out Server id where data needs to go
-                    server_id = addr%N;
-                2. Calculate the logical address where data will be written on each pod
-                    logical_addr = addr/N;  Take floor of this
-                e.g: 3 pods Size 10
-                addr 21 will go in pod 0 at location 7
-                addr 22 will go in pod 1 at location 7
-                addr 23 will go in pod 2 at location 7
-                addr 8 will go in pod 2 at location 2    
-            */
+        bool Write(int addr, int actualAddr, std::string data) {
             WriteRequest request;
             Response response;
             ClientContext context;
             request.set_data(data);
             request.set_address(addr);
-
-
+            request.set_actualaddress(actualAddr);
 
             Status status = stub_->Write(&context, request, &response);
 

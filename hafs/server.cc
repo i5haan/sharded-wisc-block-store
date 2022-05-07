@@ -48,7 +48,14 @@ class HafsImpl final : public Hafs::Service {
         explicit HafsImpl(std::string pAddress,std::string otherMirrorAddress, std::string masterAddress, HeartBeatResponse_Role role, BlockManager blockManager): replicator(otherMirrorAddress, blockManager), MasterClient(masterAddress) {
             this->role = role;
             this->blockManager = blockManager;
-            MasterClient.AddShard(pAddress,otherMirrorAddress);
+            int NumShard = MasterClient.AddShard(pAddress,otherMirrorAddress);
+            if(NumShard==-1)
+            {
+                cout<<"Failed to Add shard with master"<<endl;
+            }
+            /*
+                Add shuffle Logic
+            */
             // this->replicator = replicator;
             std::cout << "[Server] Starting up the Ha FS server!" << std::endl;
 
@@ -76,12 +83,13 @@ class HafsImpl final : public Hafs::Service {
             std::cout << "[Server] (Write) addr=" << req->address() << std::endl;
             crash(req->address(), "primaryFail");
             crash(req->address(), "backupFail");
+            int actualAddress = req->actualaddress();
 
             blockManager.lockAddress(req->address());
             if(!replicator.otherMirrorClient.getIsAlive()) {
                 std::cout << "[Server](write) Other Replica down, sending block to replicator after local write!!" << std::endl;
                 blockManager.write(req->address(), req->data());
-                blockManager.commit(req->address());
+                blockManager.commit(req->address(),actualAddress);
                 // std::cout << "adding to queue addr: " << req->address() << std::endl;
                 replicator.addPendingBlock(req->address());
                 res->set_status(Response_Status_VALID);
@@ -94,7 +102,7 @@ class HafsImpl final : public Hafs::Service {
                     blockManager.write(req->address(), req->data());
                     if(replicator.otherMirrorClient.CommitBlock(req->address())) {
                         crash(req->address(), "commitBlockInconsistency");
-                        blockManager.commit(req->address());
+                        blockManager.commit(req->address(),actualAddress);
                         res->set_status(Response_Status_VALID);
                         blockManager.unlockAddress(req->address());
                         return Status::OK;
@@ -126,7 +134,7 @@ class HafsImpl final : public Hafs::Service {
             std::cout << "[Server] (CommitBlock) addr=" << req->address() << std::endl;
             blockManager.lockAddress(req->address());
 
-            blockManager.commit(req->address());
+            blockManager.commit(req->address(),req->actualaddress());
             res->set_status(Response_Status_VALID);
             blockManager.unlockAddress(req->address());
             
@@ -150,6 +158,16 @@ class HafsImpl final : public Hafs::Service {
                 res->set_status(Response_Status_VALID);
             else
                 res->set_status(Response_Status_INVALID);
+            return Status::OK;
+        }
+
+        Status TriggerShuffle(ServerContext *context, const TriggerRequest *req, Response *res) override 
+        {
+            /*
+                Need to Add shuffle code for moving blocks across servers
+            */
+            
+            res->set_status(Response_Status_VALID);
             return Status::OK;
         }
 

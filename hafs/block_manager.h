@@ -46,7 +46,7 @@ class BlockManager {
         }
 
     public:
-        unordered_map<string,int> hashCommittedBlocks;
+        unordered_map<string,string> hashCommittedBlocks;
 
         BlockManager() {
 
@@ -59,8 +59,17 @@ class BlockManager {
             {
                 string temp;
                 while(getline(file, temp))
-                {
-                    hashCommittedBlocks[temp]=1;
+                {   istringstream ss(temp);
+                    string word;
+                    vector<string> addr;
+                    while(ss>>word)
+                    {
+                        addr.push_back(word);
+                    }
+                    if(addr.size()==2)
+                        hashCommittedBlocks[addr[0]]=addr[1];
+                    else
+                        cout<<"Error in loading commited block data\n";
                 }
                 file.close();           
             }
@@ -102,15 +111,15 @@ class BlockManager {
             unlockBlock(addr / BLOCK_SIZE);
         }
 
-        bool commit(int addr) {
+        bool commit(int addr,int actualAddress) {
             if(!isAlligned(addr)) {
                 
                 bool status = unallignedCommit(addr);
-                LogCommittedBlocks(addr);
+                LogCommittedBlocks(addr,actualAddress);
                 return status;
             }
             bool status = allignedCommit(addr);
-            LogCommittedBlocks(addr);
+            LogCommittedBlocks(addr,actualAddress);
             return status;
         }
 
@@ -345,11 +354,12 @@ class BlockManager {
         {
             return sha256(data);
         }
-        bool LogCommittedBlocks(int addr)
+        bool LogCommittedBlocks(int addr,int actualAddress)
         {
             //Block already present in CommitedList
-            string data = to_string(addr);
-            if(hashCommittedBlocks.find(data)!=hashCommittedBlocks.end())
+            string vaddr = to_string(addr);
+            string raddr = to_string(actualAddress);
+            if(hashCommittedBlocks.find(vaddr)!=hashCommittedBlocks.end())
             {
                 return true;
             }
@@ -359,9 +369,9 @@ class BlockManager {
                 ofstream file;
                 CommittedLogLock.lock();
                 file.open(CommittedLogPath,std::ios_base::app);
-                file<<data<<endl;
+                file<<vaddr<<" "<<raddr<<endl;
                 file.close();
-                hashCommittedBlocks[data]=1;
+                hashCommittedBlocks[vaddr]=raddr;
                 CommittedLogLock.unlock();
             }
 

@@ -38,7 +38,103 @@ class HafsClientShardFactory {
                     }
                 }
             }
+            std::thread thread_object(&HafsClientShardFactory::checkHealth, this);
+            thread_object.detach();
 
+
+        }
+        bool SetStatus(bool flag)
+        {
+            MStatus request;
+            Response reply;
+            if(flag)
+            {
+                request.set_state(MStatus_Status_VALID);
+            }
+            else
+            {
+                request.set_state(MStatus_Status_INVALID);
+            }
+
+            ClientContext context;
+
+            Status status = master_stub_->SetState(&context, request, &reply);
+
+            if (!status.ok()) {
+                std::cout << "[HafsMasterCLient] AckMaster: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
+                return false;
+            }
+            return true;            
+        }
+        void GetStatus()
+        {
+            Request request;
+            Response reply;
+
+            ClientContext context;
+
+            Status status = master_stub_->GetState(&context, request, &reply);
+
+            if (!status.ok()) {
+                std::cout << "[HafsMasterCLient] GetStatus: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
+            }
+            if(reply.status()==Response_Status_VALID)
+            {
+                setState(true);
+            }
+            else
+            {
+                setState(false);
+            }           
+        }
+
+        void checkHealth()
+        {
+            while(true)
+            {
+                usleep(100000);
+                GetStatus();
+                std::cout<<"[HafsMasterCLient] GetStatus state :"<<getState()<<std::endl;
+            }
+        }
+        void balanceLoad()
+        {
+            while(true)
+            {
+                usleep(10000000);
+                int oldShardCount = this->shard_servers.size();
+                vector<Connection> shards = getShards();
+                int newShardCount = shards.size();
+                if(newShardCount>oldShardCount)
+                {
+                    //Checkfor BlockCount in Shards
+                    bool ShuffleFlag=false;
+                    for(int i=0;i<oldShardCount;i++)
+                    {
+                        if(this->shard_servers[i].CanShuffle())
+                        {
+                            ShuffleFlag=true;
+                            break;
+                        }
+                    }   
+                    if(ShuffleFlag)
+                    {
+                        for(int i=0;i<oldShardCount;i++)
+                        {
+                            //This is sequential thing about making this request parallel
+                            ShuffleFlag = ShuffleFlag & this->shard_servers[i].TriggerShuffle(newShardCount);
+                        } 
+                    }
+                    if(ShuffleFlag)
+                    {
+                        //Update local shard client list with new connection
+                        this->shard_servers.push_back(HafsClientFactory(shards[newShardCount-1].primaryaddr(), shards[newShardCount-1].backupaddr()));
+                    }
+                }
+
+
+                
+            }
         }
 
         vector<Connection> getShards() {
@@ -63,10 +159,10 @@ class HafsClientShardFactory {
             return shards;
         }
 
-        bool AddShard(std::string pAddress,std::string bAddress)
+        int AddShard(std::string pAddress,std::string bAddress)
         {
             Connection request;
-            Response reply;
+            ConResponse reply;
             request.set_primaryaddr(pAddress);
             request.set_backupaddr(bAddress);
 
@@ -76,9 +172,9 @@ class HafsClientShardFactory {
 
             if (!status.ok()) {
                 std::cout << "[HafsMasterCLient] AckMaster: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
-                return false;
+                return -1;
             }
-            return true;
+            return reply.shardcnt();
         }
 
         bool Write(int addr, std::string data) {
@@ -140,10 +236,20 @@ class HafsClientShardFactory {
             cout << "[HafsCLient] Get shard number for block[" << block << "]" << endl;
             return {block % shard_servers.size() , float(block) / shard_servers.size()};
         }
+        void setState(bool flag)
+        {
+            state = flag;
+        }
+        bool getState()
+        {
+            return state;
+        }
 
     private:
         std::unique_ptr<Master::Stub> master_stub_;
         string master_address;
+        bool state;
         unordered_map<int, HafsClientFactory> shard_servers;
+
         
 };

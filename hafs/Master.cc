@@ -46,6 +46,7 @@ class MasterImpl final : public Master::Service {
         int32_t PbPairCount=0;
         std::string ConfigFilePath;
         std::unordered_map<std::string,Pod> PodList;
+        bool state;
         void LoadConfig(string filePath)
         {
             std::fstream file;
@@ -88,36 +89,66 @@ class MasterImpl final : public Master::Service {
         {
             std::cout << "[Master] Starting up the Ha FS server!" << std::endl;
             ConfigFilePath = FilePath;
+            state=1;
             LoadConfig(ConfigFilePath);
         }
-        Status AckMaster(ServerContext *context, const Connection *req, Response *res) override {
+
+        Status SetState(ServerContext *context, const MStatus *req, Response *res) override {
+
+            if(req->state()==MStatus_Status_VALID)
+            {
+                state=true;
+            }
+            else
+            {
+                state=false;
+            }
+            res->set_status(Response_Status_VALID);
+            return Status::OK;
+        }
+
+        Status GetState(ServerContext *context, const Request *req, Response *res) override {
+
+            if(state)
+            {
+                res->set_status(Response_Status_VALID);
+            }
+            else
+            {
+                res->set_status(Response_Status_VALID);
+            }
+            return Status::OK;
+        }
+
+        Status AckMaster(ServerContext *context, const Connection *req, ConResponse *res) override {
             std::string pAddress = req->primaryaddr();
             std::string sAddress = req->backupaddr();
             Pod newPod;
             if(PodList.find(pAddress)==PodList.end())
             {
-                if(PbPairCount+1 == MAXPOD)
+                if(PbPairCount == MAXPOD)
                 {
                     std::cout << "[Master] MAX shard limit reached" << std::endl;
-                    res->set_status(Response_Status_VALID);
+                    res->set_status(ConResponse_Status_VALID);
                     return Status::OK;
                 }
 
-                std::string temp = to_string(PbPairCount+1)+' '+pAddress+' '+sAddress;
+                std::string temp = to_string(PbPairCount)+' '+pAddress+' '+sAddress;
                 ofstream file;
                 ConfigFileLock.lock();
                 file.open(ConfigFilePath,std::ios_base::app);
                 file<<temp<<endl;
                 file.close();
                 newPod.primaryaddr = pAddress;
-                newPod.id = PbPairCount+1;
+                newPod.id = PbPairCount;
                 newPod.backupaddr = sAddress;
                 PodList[pAddress] = newPod;
                 PbPairCount++;
                 ConfigFileLock.unlock();
 
             }
-            res->set_status(Response_Status_VALID);
+            res->set_shardcnt(PbPairCount);
+            res->set_status(ConResponse_Status_VALID);
             return Status::OK;
         }
         Status ActiveConnections(ServerContext *context, const Request *req, ServerWriter<Connection> *res) override {

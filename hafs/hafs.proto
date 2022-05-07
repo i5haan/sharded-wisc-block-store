@@ -8,13 +8,15 @@ service Hafs
     rpc ReplicateBlock(WriteRequest) returns (Response) {}
     rpc CommitBlock(WriteRequest) returns (Response) {}
     rpc CheckConsistancy(ReadRequest) returns (Response) {}
+    rpc TriggerShuffle(TriggerRequest) returns (Response) {}
 }
 
 service Master
 {
-    rpc MasterStatus(Request) returns (Response) {}
+    rpc SetState(MStatus) returns (Response) {}
+    rpc GetState(Request) returns (Response) {}
     rpc ActiveConnections(Request) returns (stream Connection) {}
-    rpc AckMaster(Connection) returns (Response) {}
+    rpc AckMaster(Connection) returns (ConResponse) {}
 }
 message Request
 {
@@ -35,7 +37,8 @@ message HeartBeatResponse
         REINTEGRATION_BEHIND   = 1;
         REINTEGRATION_AHEAD    = 2;
         SINGLE_REPLICA_AHEAD   = 3;
-        UNHEALTHY              = 4;
+        SHUFFLE                = 4;
+        UNHEALTHY              = 5;      
     }
     Role role      = 1;
     Status status  = 2;
@@ -51,6 +54,16 @@ message Response
         INVALID   = 1;
     }
     Status status = 1;   
+}
+
+message ConResponse
+{
+    enum Status {
+        VALID     = 0;
+        INVALID   = 1;
+    }
+    Status status = 1;   
+    int32 shardcnt = 2;
 }
 
 message ReadRequest
@@ -71,7 +84,8 @@ message ReadResponse
 message WriteRequest
 {
     int32 address = 1;
-    string data   = 2;
+    int32 actualaddress = 2;
+    string data   = 3;
 }
 
 message Connection
@@ -80,3 +94,18 @@ message Connection
     string primaryaddr = 2;
     string backupaddr = 3;
 }
+
+message TriggerRequest
+{
+    int32 newshardcount = 1;
+}
+
+message MStatus
+{
+    enum Status {
+        VALID     = 0;
+        INVALID   = 1;
+    }
+    Status state = 1; 
+}
+

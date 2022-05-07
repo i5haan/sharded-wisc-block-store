@@ -83,14 +83,13 @@ class HafsClient {
             return response;
         }
 
-        bool Write(int addr, std::string data) {
+        bool Write(int addr, int actualAddr, std::string data) {
             WriteRequest request;
             Response response;
             ClientContext context;
             request.set_data(data);
             request.set_address(addr);
-
-
+            request.set_actualaddress(actualAddr);
 
             Status status = stub_->Write(&context, request, &response);
 

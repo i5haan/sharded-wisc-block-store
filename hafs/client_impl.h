@@ -64,6 +64,8 @@ class HafsClient {
             } else {
                 replicatorHealth = response.health();
                 this->isAlive = true;
+                this->blockCount = response.blockload();
+
             }
         }
 
@@ -167,6 +169,27 @@ class HafsClient {
             return isAlive;
         }
 
+        int getBlockCount()
+        {
+            return blockCount;
+        }
+
+        bool TriggerShuffle(int newShardCount)
+        {
+            TriggerRequest request;
+            Response response;
+            ClientContext context;
+            request.set_newshardcount(newShardCount);
+
+            Status status = stub_->TriggerShuffle(&context, request, &response);
+            
+            if (!status.ok()) {
+                std::cout << "[HafsCLient] TriggerShuffle: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
+                return false;
+            }
+            return true;
+        }
+
         HeartBeatResponse_Health getReplicatorHealth() {
             return replicatorHealth;
         }
@@ -176,6 +199,7 @@ class HafsClient {
         std::string address;
         bool isAlive;
         HeartBeatResponse_Health replicatorHealth;
+        int blockCount;
 };
 
 #endif

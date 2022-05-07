@@ -1,3 +1,22 @@
-./server --SAddr=128.105.144.230:8094 --path=/users/avkumar/Test --role=b --MAddr=128.105.144.230:8093
+./server --SAddr=10.10.1.1:8094 --path=/users/avkumar/Test --role=b --MAddr=10.10.1.1:8093
 
-./server --SAddr=128.105.144.230:8093 --path=/users/avkumar/Test --role=p --MAddr=128.105.144.230:8094
+./server --SAddr=10.10.1.1:8093 --path=/users/avkumar/Test --role=p --MAddr=10.10.1.1:8094
+
+
+
+
+#Master
+
+./Master --SAddr=10.10.1.1:8091
+
+
+#Shard1
+
+./server --SAddr=10.10.1.1:8093 --path=/users/avkumar/pod1/p --role=p --RAddr=10.10.1.1:8094 --MAddr=10.10.1.1:8091
+
+./server --SAddr=10.10.1.1:8094 --path=/users/avkumar/pod1/b --role=b --RAddr=10.10.1.1:8093 --MAddr=10.10.1.1:8091
+
+#Shard2
+./server --SAddr=10.10.1.1:8095 --path=/users/avkumar/pod2/p --role=p --RAddr=10.10.1.1:8096 --MAddr=10.10.1.1:8091
+
+./server --SAddr=10.10.1.1:8096 --path=/users/avkumar/pod2/b --role=b --RAddr=10.10.1.1:8095 --MAddr=10.10.1.1:8091

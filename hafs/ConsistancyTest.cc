@@ -4,7 +4,7 @@ using namespace std;
 
 int main() {
     
-    int TC = 2;
+    int TC = 1;
     
     int code; 
     ofstream myfile;
@@ -14,9 +14,9 @@ int main() {
         code = SingleClientConsistencyDiffAddr(10);
         if(code)
             k++;
-        code = SingleClientConsistencySameAddr(12,10);
+        /*code = SingleClientConsistencySameAddr(12,10);
         if(code)
-            k++;
+            k++;*/
         if(k!=TC)
             cout<<"Cosistancy failed\n";
         else

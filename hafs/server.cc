@@ -49,6 +49,7 @@ class HafsImpl final : public Hafs::Service {
             this->role = role;
             this->blockManager = blockManager;
             int NumShard = MasterClient.AddShard(pAddress,otherMirrorAddress);
+            std::cout<<"Curr No of Shards:"<<NumShard<<std::endl;
             if(NumShard==-1)
             {
                 cout<<"Failed to Add shard with master"<<endl;

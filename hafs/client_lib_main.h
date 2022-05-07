@@ -156,6 +156,8 @@ class HafsClientShardFactory {
             }
             Status status = reader->Finish();
 
+            cout << "Error message: [" << status.error_message() << "], error_code: [" << status.error_code() << "]" << endl;
+
             if(status.ok()) {
                 cout << "[HafsCLient] Recieved Shards from Master" << std::endl;
             } else {

@@ -91,6 +91,7 @@ class MasterImpl final : public Master::Service {
             ConfigFilePath = FilePath;
             state=1;
             LoadConfig(ConfigFilePath);
+            std::cout<<"LoadConfig Success"<<std::endl;
         }
 
         Status SetState(ServerContext *context, const MStatus *req, Response *res) override {
@@ -152,6 +153,7 @@ class MasterImpl final : public Master::Service {
             return Status::OK;
         }
         Status ActiveConnections(ServerContext *context, const Request *req, ServerWriter<Connection> *res) override {
+            std::cout << "Number of pods: " << PodList.size() << std::endl;
             for(auto it = PodList.begin();it!=PodList.end();it++)
             {
                 Pod tempPod = it->second;
@@ -181,7 +183,7 @@ int main(int argc, char **argv) {
     HeartBeatResponse_Role roleEnum;
 
     std::string server_address = serverAddr;
-    std::string ConfigFilePath = "/user/avkumar/Avinash/ConfigFile.txt";
+    std::string ConfigFilePath = "/user/avkumar/Master/ConfigFile.txt";
     MasterImpl service(ConfigFilePath);
     ServerBuilder builder;
     // HafsClient client(grpc::CreateChannel("0.0.0.0:8091", grpc::InsecureChannelCredentials()), "0.0.0.0:8091", false);

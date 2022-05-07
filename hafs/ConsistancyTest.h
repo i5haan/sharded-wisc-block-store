@@ -3,7 +3,7 @@
 
 #include<iostream>
 #include<vector>
-#include "client_lib.h"
+#include "client_lib_main.h"
 #include "timer.h"
 #include "metric.h"
 
@@ -16,7 +16,7 @@ All writes differnt address
 Metrics metric1,metric2;
 int SingleClientConsistencyDiffAddr(int NumWrites)
 {
-    HafsClientFactory client("128.105.144.230:8093", "128.105.144.230:8094");
+    HafsClientShardFactory client("128.105.144.230:8091");
     //HafsClient client1(grpc::CreateChannel("155.98.36.86:8093", grpc::InsecureChannelCredentials()), "155.98.36.86:8093", false);
     //HafsClient client2(grpc::CreateChannel("155.98.36.88:8094", grpc::InsecureChannelCredentials()), "155.98.36.88:8094", false);
     string res;
@@ -30,6 +30,8 @@ int SingleClientConsistencyDiffAddr(int NumWrites)
         string data = string(4096, 'a'+ CharId);
         time.start();
         client.Write(i*4096, data);
+        string readData;
+        client.Read(i*4096, readData);
         time.stop();
         //cout<<time.get_time_in_nanoseconds()<<endl;
         //metric1.add(time.get_time_in_nanoseconds());
@@ -44,15 +46,15 @@ int SingleClientConsistencyDiffAddr(int NumWrites)
     }
     //cout<<time.get_time_in_nanoseconds()<<endl;
     
-    for(int i=0;i<UsedAddr.size();i++)
+    /*for(int i=0;i<UsedAddr.size();i++)
     {
         if(client.CheckConsistancy(UsedAddr[i])!=true)
         {         
             return 0;
         }
-    }
+    }*/
 
-    usleep(10*1000000);
+    //usleep(10*1000000);
     return 1;
 }
 
@@ -61,9 +63,10 @@ int SingleClientConsistencyDiffAddr(int NumWrites)
 Single Client 
 All address Same
 */
+/*
 int SingleClientConsistencySameAddr(int k,int NumWrites)
 {
-    HafsClientFactory client("128.105.144.230:8093", "128.105.144.230:8094");
+    HafsClientShardFactory client("128.105.144.230:8091");
     //HafsClient client1(grpc::CreateChannel("155.98.36.86:8093", grpc::InsecureChannelCredentials()), "155.98.36.86:8093", false);
     //HafsClient client2(grpc::CreateChannel("155.98.36.88:8094", grpc::InsecureChannelCredentials()), "155.98.36.88:8094", false);
     // // client.Read(0, &res);
@@ -87,7 +90,7 @@ int SingleClientConsistencySameAddr(int k,int NumWrites)
         {
             cout<<"Read Write Failed"<<endl;
             return 0;
-        }*/
+        }
     }
     
     //cout<<time.get_time_in_nanoseconds()<<endl;
@@ -97,7 +100,7 @@ int SingleClientConsistencySameAddr(int k,int NumWrites)
     usleep(10*1000000);
     return 1;
 }
-
+*/
 
 /*
 Multiple Client 

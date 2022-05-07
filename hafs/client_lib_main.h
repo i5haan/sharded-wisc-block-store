@@ -1,31 +1,37 @@
 #include "client_lib.h"
+#include<bits/stdc++.h>
 #define MAXPOD 10
 using namespace std;
 
 using ::Connection;
 using ::Response;
+using ::Request;
+using ::MStatus;
 
 #define BLOCK_SIZE 4096
 
 class HafsClientShardFactory {
 
     public:
+    unordered_map<int, HafsClientFactory> shard_servers;
         HafsClientShardFactory(string master_address){
             master_stub_ = Master::NewStub(grpc::CreateChannel(master_address, grpc::InsecureChannelCredentials()));
             cout << "[HafsCLient] Starting Hafs Client Instance!" <<std::endl;
             this->master_address = master_address;
 
             //check Master status?
-
+            this->state = true;
             // Get all shards from Master for the first time
             vector<Connection> shards = getShards();
 
             // Connect to all shard servers for the first time
             connectToShards(shards);
+            std::thread thread_object(&HafsClientShardFactory::checkHealth, this);
+            thread_object.detach();
 
         }
 
-        void connectToShards(vector<Connection> shards){
+        void connectToShards(vector<Connection> &shards){
             if (shards.size() == 0) {
                 cout << "[HafsCLient] [Error] No shards found in Master" << endl;
             }
@@ -34,12 +40,12 @@ class HafsClientShardFactory {
                 //Connect client to all shards
                 for(int i = 0; i < shards.size(); i++) {
                     if (shard_servers.find(shards[i].id()) == shard_servers.end()) {
-                        shard_servers[shards[i].id()] = HafsClientFactory(shards[i].primaryaddr(), shards[i].backupaddr());
+                        shard_servers.insert({shards[i].id(),HafsClientFactory(shards[i].primaryaddr(), shards[i].backupaddr())});
+                        //shard_servers[shards[i].id()] = HafsClientFactory(shards[i].primaryaddr(), shards[i].backupaddr());
                     }
                 }
             }
-            std::thread thread_object(&HafsClientShardFactory::checkHealth, this);
-            thread_object.detach();
+
 
 
         }
@@ -97,7 +103,7 @@ class HafsClientShardFactory {
                 std::cout<<"[HafsMasterCLient] GetStatus state :"<<getState()<<std::endl;
             }
         }
-        void balanceLoad()
+ /*       void balanceLoad()
         {
             while(true)
             {
@@ -136,7 +142,7 @@ class HafsClientShardFactory {
                 
             }
         }
-
+*/
         vector<Connection> getShards() {
             vector<Connection> shards;
             // Get all shards from Master
@@ -198,7 +204,7 @@ class HafsClientShardFactory {
                 data = data.substr(0, BLOCK_SIZE - (offset));
             }
 
-            return shard_servers[shard_id].Write(shard_block1 * BLOCK_SIZE + offset, addr, data) && block2 != -1 ? shard_servers[shard_id2].Write(shard_block2 * BLOCK_SIZE, block2 * BLOCK_SIZE, data2) : true;
+            return shard_servers.at(shard_id).Write(shard_block1 * BLOCK_SIZE + offset, addr, data) && block2 != -1 ? shard_servers.at(shard_id2).Write(shard_block2 * BLOCK_SIZE, block2 * BLOCK_SIZE, data2) : true;
         }
 
         bool Read(int addr, std::string& data) {
@@ -218,7 +224,7 @@ class HafsClientShardFactory {
                 shard_block2 = shard_info2.second;
 
             }
-            if (shard_servers[shard_id].Read(shard_block1 * BLOCK_SIZE + offset, &data1) && block2 != -1 ? shard_servers[shard_id2].Read(shard_block2 * BLOCK_SIZE, &data2) : true) {
+            if (shard_servers.at(shard_id).Read(shard_block1 * BLOCK_SIZE + offset, &data1) && block2 != -1 ? shard_servers.at(shard_id2).Read(shard_block2 * BLOCK_SIZE, &data2) : true) {
                 if (block2 != -1) {
                     data = data1 + data2.substr(0, (offset));  /* check: server should send BLOCK_SIZE data for second request because it treats it as aligned read?
                                                                              shouldn't be an issue, because only 4k data, otherwise, add another arg for rpc - size? */
@@ -249,7 +255,6 @@ class HafsClientShardFactory {
         std::unique_ptr<Master::Stub> master_stub_;
         string master_address;
         bool state;
-        unordered_map<int, HafsClientFactory> shard_servers;
 
         
 };

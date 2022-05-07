@@ -48,7 +48,14 @@ class HafsImpl final : public Hafs::Service {
         explicit HafsImpl(std::string pAddress,std::string otherMirrorAddress, std::string masterAddress, HeartBeatResponse_Role role, BlockManager blockManager): replicator(otherMirrorAddress, blockManager), MasterClient(masterAddress) {
             this->role = role;
             this->blockManager = blockManager;
-            MasterClient.AddShard(pAddress,otherMirrorAddress);
+            int NumShard = MasterClient.AddShard(pAddress,otherMirrorAddress);
+            if(NumShard==-1)
+            {
+                cout<<"Failed to Add shard with master"<<endl;
+            }
+            /*
+                Add shuffle Logic
+            */
             // this->replicator = replicator;
             std::cout << "[Server] Starting up the Ha FS server!" << std::endl;
 

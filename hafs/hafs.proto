@@ -13,9 +13,10 @@ service Hafs
 
 service Master
 {
-    rpc MasterStatus(Request) returns (Response) {}
+    rpc SetState(MStatus) returns (Response) {}
+    rpc GetState(Request) returns (Response) {}
     rpc ActiveConnections(Request) returns (stream Connection) {}
-    rpc AckMaster(Connection) returns (Response) {}
+    rpc AckMaster(Connection) returns (ConResponse) {}
 }
 message Request
 {
@@ -55,6 +56,16 @@ message Response
     Status status = 1;   
 }
 
+message ConResponse
+{
+    enum Status {
+        VALID     = 0;
+        INVALID   = 1;
+    }
+    Status status = 1;   
+    int32 shardcnt = 2;
+}
+
 message ReadRequest
 {
     int32 address = 1;
@@ -88,3 +99,13 @@ message TriggerRequest
 {
     int32 newshardcount = 1;
 }
+
+message MStatus
+{
+    enum Status {
+        VALID     = 0;
+        INVALID   = 1;
+    }
+    Status state = 1; 
+}
+

@@ -57,6 +57,60 @@ int SingleClientConsistencyDiffAddr(int NumWrites)
 }
 
 
+int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string backupAddr, bool flag)
+{
+    //odd writes client
+    HafsClientFactory client1(primaryAddr, backupAddr);
+
+    
+    //HafsClient client1(grpc::CreateChannel("155.98.36.86:8093", grpc::InsecureChannelCredentials()), "155.98.36.86:8093", false);
+    //HafsClient client2(grpc::CreateChannel("155.98.36.88:8094", grpc::InsecureChannelCredentials()), "155.98.36.88:8094", false);
+    
+    string res;
+
+    vector<int> UsedAddr;
+    Timer2 time;
+
+    //serving odd writes.
+
+    for(int i = 0; i < NumWrites; i++) {
+        int CharId = rand()%26;
+        string data = string(4096, 'a'+ CharId);
+        time.start();
+        if(flag == true)
+        {
+            client1.Write((2*i+1)*4096, data);
+        }
+        else
+        {
+            client1.Write((2*i)*4096, data);
+        }
+        time.stop();
+        //cout<<time.get_time_in_nanoseconds()<<endl;
+        //metric1.add(time.get_time_in_nanoseconds());
+        UsedAddr.push_back(i*4096);
+        /*client.Read(i*4096, &res);
+
+        if(res!=data)
+        {
+            cout<<"Read Write Failed"<<endl;
+            return 0;
+        }*/
+    }
+    //cout<<time.get_time_in_nanoseconds()<<endl;
+    
+    // for(int i=0;i<UsedAddr.size();i++)
+    // {
+    //     if(client.CheckConsistancy(UsedAddr[i])!=true)
+    //     {         
+    //         return 0;
+    //     }
+    // }
+
+    usleep(10*1000000);
+    return 1;
+}
+
 /*
 Single Client 
 All address Same

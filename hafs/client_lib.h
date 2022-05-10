@@ -10,8 +10,15 @@ class HafsClientFactory {
         HafsClient backup;
     public:
         HafsClientFactory(string primaryAddress, string backupAddress): primary(grpc::CreateChannel(primaryAddress, grpc::InsecureChannelCredentials()), primaryAddress, false), backup(grpc::CreateChannel(backupAddress, grpc::InsecureChannelCredentials()), backupAddress, false) {
-
+            cout << "Are the addresses okay?"<< endl;
+            cout << primaryAddress << endl << backupAddress << endl;
         }
+
+        // ~HafsClientFactory();
+
+        // ~HafsClientFactory() {
+        //     cout << "Destructor called!\n";
+        // }
 
         bool Write(int addr, int actualAddr, std::string data) {
             if(primary.getIsAlive() && (primary.getReplicatorHealth() == HeartBeatResponse_Health_HEALTHY || primary.getReplicatorHealth() == HeartBeatResponse_Health_SINGLE_REPLICA_AHEAD || primary.getReplicatorHealth() == HeartBeatResponse_Health_REINTEGRATION_AHEAD)) {

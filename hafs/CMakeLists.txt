@@ -52,10 +52,10 @@ target_link_libraries(Master
   ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF})
 
 
-#add_executable(basic_read_write "basic_read_write.cc")
-#  target_link_libraries(basic_read_write 
-#    ${PTHREAD_LIB} hw_grpc_proto
-#    ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF})
+add_executable(basic_read_write "basic_read_write.cc")
+ target_link_libraries(basic_read_write 
+   ${PTHREAD_LIB} hw_grpc_proto
+   ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF})
 
 #add_executable(status_checker "status_checker.cc")
 #  target_link_libraries(status_checker 

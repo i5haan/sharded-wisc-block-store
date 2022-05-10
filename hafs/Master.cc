@@ -122,11 +122,13 @@ class MasterImpl final : public Master::Service {
         }
 
         Status AckMaster(ServerContext *context, const Connection *req, ConResponse *res) override {
+            std::cout << "Adding shard!\n";
             std::string pAddress = req->primaryaddr();
             std::string sAddress = req->backupaddr();
             Pod newPod;
-            if(PodList.find(pAddress)==PodList.end())
+            if(PodList.find(pAddress) == PodList.end() && PodList.find(sAddress) == PodList.end()) // check if by chance backup also sends the ack
             {
+                std::cout << "Adding shard yo!\n";
                 if(PbPairCount == MAXPOD)
                 {
                     std::cout << "[Master] MAX shard limit reached" << std::endl;

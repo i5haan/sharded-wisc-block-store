@@ -22,7 +22,7 @@
 #include "common.cc"
 #include "replicator.h"
 #include "SHA256.cc"
-#include "client_lib_main.h"
+#include "new_client.h"
 using ::Request;
 using ::HeartBeatResponse;
 using ::ReadRequest;
@@ -41,19 +41,19 @@ class HafsImpl final : public Hafs::Service {
         HeartBeatResponse_Role role; 
         BlockManager blockManager;
         Replicator replicator;
-        HafsClientShardFactory MasterClient;
+        StaticThreeShardFactory MasterClient;
 
     public:
         int64_t counter = 0;
-        explicit HafsImpl(std::string pAddress,std::string otherMirrorAddress, std::string masterAddress, HeartBeatResponse_Role role, BlockManager blockManager): replicator(otherMirrorAddress, blockManager), MasterClient(masterAddress) {
+        explicit HafsImpl(std::string pAddress,std::string otherMirrorAddress, std::string masterAddress, HeartBeatResponse_Role role, BlockManager blockManager): replicator(otherMirrorAddress, blockManager), MasterClient("10.10.1.1:8093", "10.10.1.1:8094", "10.10.1.1:8095", "10.10.1.1:8096", "x", "x") {
             this->role = role;
             this->blockManager = blockManager;
-            int NumShard = MasterClient.AddShard(pAddress,otherMirrorAddress);
-            std::cout<<"Curr No of Shards:"<<NumShard<<std::endl;
-            if(NumShard==-1)
-            {
-                cout<<"Failed to Add shard with master"<<endl;
-            }
+            // int NumShard = MasterClient.AddShard(pAddress,otherMirrorAddress);
+            // std::cout<<"Curr No of Shards:"<<NumShard<<std::endl;
+            // if(NumShard==-1)
+            // {
+            //     cout<<"Failed to Add shard with master"<<endl;
+            // }
             /*
                 Add shuffle Logic
             */

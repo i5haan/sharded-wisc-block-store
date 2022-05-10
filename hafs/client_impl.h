@@ -29,11 +29,23 @@ using grpc::ClientReader;
 using grpc::ClientReaderWriter;
 using grpc::Status;
 
+std::mutex l;
+
 
 class HafsClient {
     public:
         HafsClient() {}
         HafsClient(std::shared_ptr<Channel> channel, std::string address, bool isAlive): stub_(Hafs::NewStub(channel)) {
+            // std::cout << "[HafsCLient] Starting Hafs Client Instance!" <<std::endl;
+            this->address = address;
+            this->isAlive = isAlive;
+            // Get first HearBeat here before starting thread
+            checkHeartBeat();
+            std::thread thread_object(&HafsClient::startHeartBeat, this);
+            thread_object.detach();
+        }
+
+        HafsClient(std::string address, bool isAlive): stub_(Hafs::NewStub(grpc::CreateChannel(address, grpc::InsecureChannelCredentials()))) {
             // std::cout << "[HafsCLient] Starting Hafs Client Instance!" <<std::endl;
             this->address = address;
             this->isAlive = isAlive;
@@ -76,13 +88,15 @@ class HafsClient {
             Request request;
             HeartBeatResponse response;
             ClientContext context;
-            /*Status status = stub_->HeartBeat(&context, request, &response);
+            std::cout << "Is stub the problem? " << &stub_ << std::endl;
+            l.lock();
+            Status status = stub_->HeartBeat(&context, request, &response);
+            l.unlock();
 
             if (!status.ok()) {
                 // std::cout << "[HafsCLient] HeartBeat Failed: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
                 response.set_status(HeartBeatResponse_Status_INVALID);
-            }*/
-            response.set_status(HeartBeatResponse_Status_INVALID);
+            }
             return response;
         }
 
@@ -201,6 +215,7 @@ class HafsClient {
         bool isAlive;
         HeartBeatResponse_Health replicatorHealth;
         int blockCount;
+        // bool doHeartBeat;
 };
 
 #endif

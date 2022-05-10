@@ -9,11 +9,11 @@ using ::Request;
 using ::MStatus;
 
 #define BLOCK_SIZE 4096
+unordered_map<int, HafsClientFactory> shard_servers;
 
 class HafsClientShardFactory {
 
     public:
-    unordered_map<int, HafsClientFactory> shard_servers;
         HafsClientShardFactory(string master_address){
             master_stub_ = Master::NewStub(grpc::CreateChannel(master_address, grpc::InsecureChannelCredentials()));
             cout << "[HafsCLient] Starting Hafs Client Instance!" <<std::endl;
@@ -40,7 +40,8 @@ class HafsClientShardFactory {
                 //Connect client to all shards
                 for(int i = 0; i < shards.size(); i++) {
                     if (shard_servers.find(shards[i].id()) == shard_servers.end()) {
-                        shard_servers.insert({shards[i].id(),HafsClientFactory(shards[i].primaryaddr(), shards[i].backupaddr())});
+                        shard_servers.insert({shards[i].id(),HafsClientFactory(shards[i].primaryaddr(),  shards[i].backupaddr())});
+                        // shard_servers.insert({shards[i].id(),HafsClientFactory(grpc::CreateChannel(shards[i].primaryaddr(), grpc::InsecureChannelCredentials()), shards[i].primaryaddr(), grpc::CreateChannel(shards[i].backupaddr(), grpc::InsecureChannelCredentials()),  shards[i].backupaddr())});
                         //shard_servers[shards[i].id()] = HafsClientFactory(shards[i].primaryaddr(), shards[i].backupaddr());
                     }
                 }

@@ -97,7 +97,8 @@ message WriteRequest
 {
     int32 address = 1;
     int32 actualaddress = 2;
-    string data   = 3;
+    int32 type = 3;
+    string data   = 4;
 }
 
 message Connection

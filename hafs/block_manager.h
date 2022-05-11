@@ -18,6 +18,10 @@
 #include "SHA256.h"
 using namespace std;
 
+#define START_LOC 0
+#define SHUFFLE_LOC 1
+#define MAX_LOC 2
+
 const int BLOCK_SIZE         = 4096;
 const int BLOCK_DIVIDER_SIZE = 2048;
 const int BLOCK_PER_DIVIDER  = 2048;
@@ -28,7 +32,7 @@ mutex CommittedLogLock;
 
 class BlockManager {
     private:
-        string fsRoot;
+        string fsRoot[MAX_LOC];
 
         bool isAlligned(int addr) {
             if(addr % BLOCK_SIZE == 0) {
@@ -47,6 +51,7 @@ class BlockManager {
 
     public:
         unordered_map<string,string> hashCommittedBlocks;
+        int curr_index;
 
         BlockManager() {
 
@@ -74,15 +79,26 @@ class BlockManager {
                 file.close();           
             }
         }
-        BlockManager(string fsRoot) {
-            this->fsRoot = fsRoot;
-            mkdir(fsRoot.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
-            mkdir((fsRoot + "-tmp").c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
+        BlockManager(string fsRoot0, string fsRoot1) {
+            this->fsRoot[START_LOC] = fsRoot0;
+            mkdir(fsRoot0.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
+            mkdir((fsRoot0 + "-tmp").c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
 
             //Init Committed Block Addr
-            string CommittedLogPath = fsRoot + "/CommitedLog";
+            string CommittedLogPath0 = fsRoot0 + "/CommitedLog";
             CommittedLogLock.lock();
-            InitHash(CommittedLogPath);
+            InitHash(CommittedLogPath0);
+            CommittedLogLock.unlock();
+
+            //Different Location 
+            this->fsRoot[SHUFFLE_LOC] = fsRoot1;
+            mkdir(fsRoot1.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
+            mkdir((fsRoot1 + "-tmp").c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
+
+            //Init Committed Block Addr
+            string CommittedLogPath1 = fsRoot1 + "/CommitedLog";
+            CommittedLogLock.lock();
+            InitHash(CommittedLogPath1);
             CommittedLogLock.unlock();
 
         }
@@ -111,11 +127,11 @@ class BlockManager {
             unlockBlock(addr / BLOCK_SIZE);
         }
 
-        bool commit(int addr,int actualAddress) {
+        bool commit(int addr ,  int actualAddress) {
             if(!isAlligned(addr)) {
                 
                 bool status = unallignedCommit(addr);
-                LogCommittedBlocks(addr,actualAddress);
+                LogCommittedBlocks(addr, actualAddress);
                 return status;
             }
             bool status = allignedCommit(addr);
@@ -130,14 +146,14 @@ class BlockManager {
             int secondBlockNumber       = firstBlockNumber + 1;
             int secondBlockDir          = getBlockOffset(secondBlockNumber);
 
-            string firstOffsetPath      = fsRoot + "/" + to_string(firstBlockDir);
+            string firstOffsetPath      = fsRoot[curr_index] + "/" + to_string(firstBlockDir);
             string firstBlockPath       = firstOffsetPath + "/" + to_string(firstBlockNumber);
-            string tmpFirstOfsetPath    = fsRoot + "-tmp/" + to_string(firstBlockDir);
+            string tmpFirstOfsetPath    = fsRoot[curr_index] + "-tmp/" + to_string(firstBlockDir);
             string tmpFirstBlockPath    = tmpFirstOfsetPath + "/" + to_string(firstBlockNumber);
 
-            string secondOffsetPath     = fsRoot + "/" + to_string(secondBlockDir);
+            string secondOffsetPath     = fsRoot[curr_index] + "/" + to_string(secondBlockDir);
             string secondBlockPath      = secondOffsetPath + "/" + to_string(secondBlockNumber);
-            string tmpSecondOfsetPath    = fsRoot + "-tmp/" + to_string(secondBlockDir);
+            string tmpSecondOfsetPath    = fsRoot[curr_index] + "-tmp/" + to_string(secondBlockDir);
             string tmpSecondBlockPath    = tmpSecondOfsetPath + "/" + to_string(secondBlockNumber);
 
             mkdir(firstOffsetPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // To make sure the offset directory exists
@@ -152,13 +168,13 @@ class BlockManager {
             return true;
         }
 
-        bool allignedCommit(int addr) {
+        bool allignedCommit(int addr ) {
             int blockNumber   = getBlockNumber(addr);
             int blockOffset   = getBlockOffset(blockNumber);
-            string offsetPath = fsRoot + "/" + to_string(blockOffset);
+            string offsetPath = fsRoot[curr_index] + "/" + to_string(blockOffset);
             string blockPath  = offsetPath + "/" + to_string(blockNumber);
 
-            string tempOffsetPath = fsRoot + "-tmp/" + to_string(blockOffset);
+            string tempOffsetPath = fsRoot[curr_index] + "-tmp/" + to_string(blockOffset);
             string tempBlockPath  = tempOffsetPath + "/" + to_string(blockNumber);
             cout << "[BlockManager] Performing an alligned commit on addr[" << addr <<"] with tmp path[" << tempBlockPath << "] and block path[" << blockPath << "]" << endl;
             
@@ -170,18 +186,18 @@ class BlockManager {
             return true;
         }
 
-        bool write(int addr, string data) {
+        bool write(int addr , string data) {
             if(!isAlligned(addr)) {
                 return unallignedWrite(addr, data);
             }
 
-            return allignedWrite(addr, data);
+            return allignedWrite(addr,  data);
         }
 
-        bool allignedWrite(int addr, string data) {
+        bool allignedWrite(int addr , string data) {
             int blockNumber   = getBlockNumber(addr);
             int blockOffset   = getBlockOffset(blockNumber);
-            string offsetPath = fsRoot + "-tmp/" + to_string(blockOffset);
+            string offsetPath = fsRoot[curr_index] + "-tmp/" + to_string(blockOffset);
             string blockPath  = offsetPath + "/" + to_string(blockNumber);
             cout << "[BlockManager] Performing an alligned write on addr[" << addr <<"] with block path[" << blockPath << "] and offset path[" << offsetPath << "]" << endl;
             
@@ -202,7 +218,7 @@ class BlockManager {
             return true;
         }
 
-        bool unallignedWrite(int addr, string data) {
+        bool unallignedWrite(int addr , string data) {
             int firstBlockNumber        = getBlockNumber(addr);
             int firstBlockDir           = getBlockOffset(firstBlockNumber);
             int firstBlockReadLocation  = addr % BLOCK_SIZE;
@@ -213,10 +229,10 @@ class BlockManager {
             int secondBlockReadLocation = 0;
             int secondBlockReadSize     = firstBlockReadLocation;
 
-            string firstOffsetPath      = fsRoot + "-tmp/" + to_string(firstBlockDir);
+            string firstOffsetPath      = fsRoot[curr_index] + "-tmp/" + to_string(firstBlockDir);
             string firstBlockPath       = firstOffsetPath + "/" + to_string(firstBlockNumber);
 
-            string secondOffsetPath     = fsRoot + "-tmp/" + to_string(secondBlockDir);
+            string secondOffsetPath     = fsRoot[curr_index] + "-tmp/" + to_string(secondBlockDir);
             string secondBlockPath      = secondOffsetPath + "/" + to_string(secondBlockNumber);
             cout << "[BlockManager] Performing an unalligned write on addr[" << addr <<"] with block path[" << firstBlockPath << "] and offset path[" << firstOffsetPath << "]" << endl;
             cout << "[BlockManager] Performing an unalligned write on addr[" << addr <<"] with block path[" << secondBlockPath << "] and offset path[" << secondOffsetPath << "]" << endl;
@@ -254,17 +270,17 @@ class BlockManager {
             return true;
         }
 
-        bool read(int addr, string* data) {
+        bool read(int addr ,string* data) {
             if(!isAlligned(addr)) {
-                return unallignedRead(addr, data);
+                return unallignedRead(addr,  data);
             }
-            return allignedRead(addr, data);
+            return allignedRead(addr,  data);
         }   
 
-        bool allignedRead(int addr, string* data) {
+        bool allignedRead(int addr ,string* data) {
             int blockNumber = getBlockNumber(addr);
             int blockOffset = getBlockOffset(blockNumber);
-            string offsetPath = fsRoot + "/" + to_string(blockOffset);
+            string offsetPath = fsRoot[curr_index] + "/" + to_string(blockOffset);
             string blockPath = offsetPath + "/" + to_string(blockNumber);
             // cout << "[BlockManager] Performing an alligned read on addr[" << addr <<"] with block path[" << blockPath << "] and offset path[" << offsetPath << "]" << endl;
             
@@ -299,7 +315,7 @@ class BlockManager {
             return true;
         }
 
-        bool unallignedRead(int addr, string* data) {
+        bool unallignedRead(int addr ,string* data) {
             int firstBlockNumber        = getBlockNumber(addr);
             int firstBlockDir           = getBlockOffset(firstBlockNumber);
             int firstBlockReadLocation  = addr % BLOCK_SIZE;
@@ -310,10 +326,10 @@ class BlockManager {
             int secondBlockReadLocation = 0;
             int secondBlockReadSize     = firstBlockReadLocation;
 
-            string firstOffsetPath      = fsRoot + "/" + to_string(firstBlockDir);
+            string firstOffsetPath      = fsRoot[curr_index] + "/" + to_string(firstBlockDir);
             string firstBlockPath       = firstOffsetPath + "/" + to_string(firstBlockNumber);
 
-            string secondOffsetPath     = fsRoot + "/" + to_string(secondBlockDir);
+            string secondOffsetPath     = fsRoot[curr_index] + "/" + to_string(secondBlockDir);
             string secondBlockPath      = secondOffsetPath + "/" + to_string(secondBlockNumber);
 
             mkdir(firstOffsetPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // To make sure the offset directory exists
@@ -354,7 +370,7 @@ class BlockManager {
         {
             return sha256(data);
         }
-        bool LogCommittedBlocks(int addr,int actualAddress)
+        bool LogCommittedBlocks(int addr ,int actualAddress)
         {
             //Block already present in CommitedList
             string vaddr = to_string(addr);
@@ -365,7 +381,7 @@ class BlockManager {
             }
             else
             {
-                string CommittedLogPath = fsRoot + "/CommitedLog";
+                string CommittedLogPath = fsRoot[curr_index] + "/CommitedLog";
                 ofstream file;
                 CommittedLogLock.lock();
                 file.open(CommittedLogPath,std::ios_base::app);

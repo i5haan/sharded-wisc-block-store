@@ -45,9 +45,13 @@ class HafsImpl final : public Hafs::Service {
 
     public:
         int64_t counter = 0;
+        bool IsFirstShuffle;
         explicit HafsImpl(std::string pAddress,std::string otherMirrorAddress, std::string masterAddress, HeartBeatResponse_Role role, BlockManager blockManager): replicator(otherMirrorAddress, blockManager), MasterClient("10.10.1.1:8091", "10.10.1.1:8093", "10.10.1.1:8094", "10.10.1.1:8095", "10.10.1.1:8096", "10.10.1.1:8097", "10.10.1.1:8098") {
             this->role = role;
+            blockManager.curr_index = START_LOC;
             this->blockManager = blockManager;
+            replicator.blockManager.curr_index = START_LOC;
+            IsFirstShuffle = false;
             // int NumShard = MasterClient.AddShard(pAddress,otherMirrorAddress);
             // std::cout<<"Curr No of Shards:"<<NumShard<<std::endl;
             // if(NumShard==-1)
@@ -85,6 +89,11 @@ class HafsImpl final : public Hafs::Service {
             crash(req->address(), "primaryFail");
             crash(req->address(), "backupFail");
             int actualAddress = req->actualaddress();
+            if(IsFirstShuffle && req->type())
+            {
+                blockManager.curr_index = SHUFFLE_LOC;
+                replicator.blockManager.curr_index = SHUFFLE_LOC;
+            }
 
             blockManager.lockAddress(req->address());
             if(!replicator.otherMirrorClient.getIsAlive()) {
@@ -103,7 +112,7 @@ class HafsImpl final : public Hafs::Service {
                     blockManager.write(req->address(), req->data());
                     if(replicator.otherMirrorClient.CommitBlock(req->address())) {
                         crash(req->address(), "commitBlockInconsistency");
-                        blockManager.commit(req->address(),actualAddress);
+                        blockManager.commit(req->address(), actualAddress);
                         res->set_status(Response_Status_VALID);
                         blockManager.unlockAddress(req->address());
                         return Status::OK;
@@ -167,6 +176,20 @@ class HafsImpl final : public Hafs::Service {
             /*
                 Need to Add shuffle code for moving blocks across servers
             */
+            std::cout<<"Shuffle Started"<<endl;
+            IsFirstShuffle = true;
+            std::unordered_map<std::string, std::string>::iterator it;
+            MasterClient.setShardNo(MasterClient.getShards()+1);
+            for(it = blockManager.hashCommittedBlocks.begin();it!=blockManager.hashCommittedBlocks.end();it++)
+            {
+                std::string data;
+                mtx.lock();
+                blockManager.curr_index = START_LOC;
+                blockManager.read(stoi(it->first), &data);
+                blockManager.curr_index = SHUFFLE_LOC;
+                mtx.unlock();
+                MasterClient.ShuffleWrite(stoi(it->second),data);
+            }
             res->set_status(Response_Status_VALID);
             return Status::OK;
         }
@@ -219,7 +242,9 @@ int main(int argc, char **argv) {
     }
 
     std::string server_address = serverAddr;
-    HafsImpl service(server_address, otherMirrorAddress, masterAddress, roleEnum, BlockManager(fsPath));
+    std:: string fsPath0 = fsPath+"0";
+    std:: string fsPath1 = fsPath+"1";
+    HafsImpl service(server_address, otherMirrorAddress, masterAddress, roleEnum, BlockManager(fsPath0,fsPath1));
     ServerBuilder builder;
     // HafsClient client(grpc::CreateChannel("0.0.0.0:8091", grpc::InsecureChannelCredentials()), "0.0.0.0:8091", false);
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());

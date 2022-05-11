@@ -23,11 +23,12 @@ class Replicator {
         queue<int> pendingBlocks;
         unordered_map<int, bool> pendinBlocksMap;
         // HafsClient otherMirrorClient;
-        BlockManager blockManager;
+        
         std::mutex queueLock;
         HeartBeatResponse_Health health;
     public:
         HafsClient otherMirrorClient;
+        BlockManager blockManager;
         Replicator() {
 
         }

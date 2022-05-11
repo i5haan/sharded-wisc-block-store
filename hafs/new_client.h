@@ -76,27 +76,55 @@ class StaticThreeShardFactory {
             if(addr%BLK_SIZE!=0)
             {
                 cout<<"UnallignedAddr"<<endl;
+                return false;
             }
             int shardID = (addr/BLK_SIZE)%numShards;
             int logicalAddr = getLogicalAdd(addr,numShards);
             if(shardID==0)
             {
-                one.Write(logicalAddr,addr,data);
+                one.Write(logicalAddr,addr,data,false);
             }
             else if(shardID==1)
             {
-                two.Write(logicalAddr,addr,data);
+                two.Write(logicalAddr,addr,data,false);
             }
             else
             {
-                three.Write(logicalAddr,addr,data);
+                three.Write(logicalAddr,addr,data,false);
             }
+            return true;
         }
+        bool ShuffleWrite(int addr, std::string data) 
+        {
+            std::cout<<"ShuffleWrite With Shard Count:"<<numShards<<endl;
+            if(addr%BLK_SIZE!=0)
+            {
+                cout<<"UnallignedAddr"<<endl;
+                return false;
+            }
+            int shardID = (addr/BLK_SIZE)%numShards;
+            int logicalAddr = getLogicalAdd(addr,numShards);
+            if(shardID==0)
+            {
+                one.Write(logicalAddr,addr,data,true);
+            }
+            else if(shardID==1)
+            {
+                two.Write(logicalAddr,addr,data,true);
+            }
+            else
+            {
+                three.Write(logicalAddr,addr,data,true);
+            }
+            return true;
+        }
+
         bool Read(int addr, std::string *data) 
         {
             if(addr%BLK_SIZE!=0)
             {
                 cout<<"UnallignedAddr"<<endl;
+                return false;
             }
             int shardID = (addr/BLK_SIZE)%numShards;
             int logicalAddr = getLogicalAdd(addr,numShards);
@@ -112,6 +140,16 @@ class StaticThreeShardFactory {
             {
                 three.Read(logicalAddr,data);
             }
+            return true;
+        }
+        bool TriggerShuffle()
+        {
+            one.TriggerShuffle(numShards);
+            two.TriggerShuffle(numShards);
+        }
+        void setShardNo(int n)
+        {
+            numShards = n;
         }
 
 

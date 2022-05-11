@@ -89,7 +89,7 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
     // else
     // {
     //     ofstream myfile;
-    //     myfile.open ("example_even.txt");
+    //     myfile.open ("example_even.txt");git 
 
     // }
     
@@ -99,11 +99,11 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
         time.start();
         if(flag == true)
         {
-            client1.Write((2*i+1)*4096, data);
+            client1.Read((2*i+1)*4096, &res);
         }
         else
         {
-            client1.Write((2*i)*4096, data);
+            client1.Read((2*i)*4096, &res);
         }
         time.stop();
         writeTimes.push_back(time.get_time_in_nanoseconds());
@@ -170,10 +170,10 @@ int Shard_ClientConsistencySameAddr(int NumWrites, string primaryAddr, string ba
     Timer2 time;
 
     ofstream myfile;
-    myfile.open ("values_odd_sameaddr.txt",  ios::in | ios::app);
+    myfile.open ("values_odd_sameaddr_read.txt",  ios::in | ios::app);
 
     ofstream myfile1;
-    myfile1.open ("values_even_sameaddr.txt",  ios::in | ios::app);
+    myfile1.open ("values_even_sameaddr_read.txt",  ios::in | ios::app);
     
     // //serving odd writes.
     // if(flag == true)
@@ -195,11 +195,11 @@ int Shard_ClientConsistencySameAddr(int NumWrites, string primaryAddr, string ba
         time.start();
         if(flag == true)
         {
-            client1.Write((2+1)*4096, data);
+            client1.Read((2+1)*4096, &res);
         }
         else
         {
-            client1.Write((2)*4096, data);
+            client1.Read((2)*4096, &res);
         }
         time.stop();
         writeTimes.push_back(time.get_time_in_nanoseconds());

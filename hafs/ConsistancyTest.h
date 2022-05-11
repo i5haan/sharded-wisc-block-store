@@ -74,10 +74,10 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
     Timer2 time;
 
     ofstream myfile;
-    myfile.open ("example_odd.txt");
+    myfile.open ("values_odd.txt",  ios::in | ios::app);
 
     ofstream myfile1;
-    myfile1.open ("example_even.txt");
+    myfile1.open ("values_even.txt",  ios::in | ios::app);
     
     // //serving odd writes.
     // if(flag == true)
@@ -137,7 +137,16 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
     //     }
     // }
 
-    cout << accumulate(writeTimes.begin(),writeTimes.end(),0) << endl;
+    if(flag == true)
+    {
+        myfile << accumulate(writeTimes.begin(),writeTimes.end(),0) << endl;
+    }
+    else
+    {
+        myfile1 << accumulate(writeTimes.begin(),writeTimes.end(),0) << endl;
+    }
+    //myfile << accumulate(writeTimes.begin(),writeTimes.end(),0) << endl;
+    //myfile << accumulate(writeTimes.begin(),writeTimes.end(),0) << endl;
     
     myfile.close();
     myfile1.close();

@@ -10,8 +10,8 @@ class HafsClientFactory {
         HafsClient backup;
     public:
         HafsClientFactory(string primaryAddress, string backupAddress): primary(grpc::CreateChannel(primaryAddress, grpc::InsecureChannelCredentials()), primaryAddress, false), backup(grpc::CreateChannel(backupAddress, grpc::InsecureChannelCredentials()), backupAddress, false) {
-            cout << "Are the addresses okay?"<< endl;
-            cout << primaryAddress << endl << backupAddress << endl;
+            // cout << "Are the addresses okay?"<< endl;
+            // cout << primaryAddress << endl << backupAddress << endl;
         }
 
         // ~HafsClientFactory();

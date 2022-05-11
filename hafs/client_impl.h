@@ -88,11 +88,10 @@ class HafsClient {
             Request request;
             HeartBeatResponse response;
             ClientContext context;
-            std::cout << "Is stub the problem? " << &stub_ << std::endl;
+            // std::cout << "Is stub the problem? " << &stub_ << std::endl;
             l.lock();
             Status status = stub_->HeartBeat(&context, request, &response);
             l.unlock();
-
             if (!status.ok()) {
                 // std::cout << "[HafsCLient] HeartBeat Failed: error code[" << status.error_code() << "]: " << status.error_message() << std::endl;
                 response.set_status(HeartBeatResponse_Status_INVALID);

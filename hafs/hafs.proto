@@ -13,10 +13,22 @@ service Hafs
 
 service Master
 {
-    rpc SetState(MStatus) returns (Response) {}
-    rpc GetState(Request) returns (Response) {}
-    rpc ActiveConnections(Request) returns (stream Connection) {}
-    rpc AckMaster(Connection) returns (ConResponse) {}
+    rpc SetState(MasterState) returns (Response) {}
+    rpc GetState(Request) returns (MasterState) {}
+}
+
+message MasterState {
+    enum Shards {
+        TWO   = 0;
+        THREE = 1;
+    }
+    enum Status {
+        VALID =  0;
+        INVALID = 1;
+    }
+
+    Shards shards = 1;
+    Status status = 2;
 }
 message Request
 {

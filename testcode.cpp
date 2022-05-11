@@ -1,6 +1,6 @@
 #include<bits/stdc++.h>
 using namespace std;
-
+#define BLOCK_SIZE 4096
 bool LogCommitedBlocks(string fsRoot, int addr)
 {
     string CommitedLogPath = fsRoot + "/CommitedLog";
@@ -11,6 +11,37 @@ bool LogCommitedBlocks(string fsRoot, int addr)
     file.close();
     return true;
 }  
+
+int numShards=2;
+int getLogicalAdd(int addr,int n)
+{
+    int blockID = addr/BLOCK_SIZE;
+    int logicalBlockID =  floor(blockID/n);
+    return (logicalBlockID*BLOCK_SIZE);
+}
+bool Write(int addr, std::string data) 
+{
+    if(addr%BLOCK_SIZE!=0)
+    {
+        cout<<"UnallignedAddr"<<endl;
+    }
+    int shardID = (addr/BLOCK_SIZE)%numShards;
+    int logicalAddr = getLogicalAdd(addr,numShards);
+    if(shardID==0)
+    {
+        one.Write(logicalAddr,data);
+    }
+    else if(shardID==1)
+    {
+        two.Write(logicalAddr,data);
+    }
+    else
+    {
+        three.Write(logicalAddr,data);
+    }
+
+
+}
 
 int main()
 {

@@ -45,7 +45,7 @@ class HafsImpl final : public Hafs::Service {
 
     public:
         int64_t counter = 0;
-        explicit HafsImpl(std::string pAddress,std::string otherMirrorAddress, std::string masterAddress, HeartBeatResponse_Role role, BlockManager blockManager): replicator(otherMirrorAddress, blockManager), MasterClient("10.10.1.1:8093", "10.10.1.1:8094", "10.10.1.1:8095", "10.10.1.1:8096", "x", "x") {
+        explicit HafsImpl(std::string pAddress,std::string otherMirrorAddress, std::string masterAddress, HeartBeatResponse_Role role, BlockManager blockManager): replicator(otherMirrorAddress, blockManager), MasterClient("10.10.1.1:8091", "10.10.1.1:8093", "10.10.1.1:8094", "10.10.1.1:8095", "10.10.1.1:8096", "10.10.1.1:8097", "10.10.1.1:8098") {
             this->role = role;
             this->blockManager = blockManager;
             // int NumShard = MasterClient.AddShard(pAddress,otherMirrorAddress);
@@ -167,7 +167,6 @@ class HafsImpl final : public Hafs::Service {
             /*
                 Need to Add shuffle code for moving blocks across servers
             */
-            
             res->set_status(Response_Status_VALID);
             return Status::OK;
         }

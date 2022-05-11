@@ -21,7 +21,7 @@
 #include "hafs.grpc.pb.h"
 // #include "block_manager.h"
 #include "common.cc"
-#include "client_impl.h"
+#include "new_client.h"
 #include "block_manager.h"
 
 using ::Request;
@@ -42,129 +42,35 @@ struct Pod
     std::string backupaddr;
 };
 class MasterImpl final : public Master::Service {
-    public:
-        int32_t PbPairCount=0;
-        std::string ConfigFilePath;
-        std::unordered_map<std::string,Pod> PodList;
-        bool state;
-        void LoadConfig(string filePath)
-        {
-            std::fstream file;
-            file.open(filePath,std::ios_base::in);
+    MasterState_Status status;
+    MasterState_Shards shards;
 
-            if(file.is_open())
-            {
-                std::string temp;
-                while(getline(file, temp))
-                {
-                    std::stringstream sstream(temp);
-                    std::string word;
-                    int flag = 1;
-                    Pod newPod;
-                    while(getline(sstream,word,' '))
-                    {
-                        if(flag==1)
-                        {
-                            newPod.id = stoi(word);
-                            flag=2;
-                        }
-                        else if(flag==2)
-                        {
-                            newPod.primaryaddr=word;
-                            flag=3;
-                        }    
-                        else if(flag==3)
-                        {
-                            newPod.backupaddr=word;
-                        }
+    HafsClientFactory one;
+    HafsClientFactory two;
+    HafsClientFactory three;
     
-                    }
-                    this->PodList[newPod.primaryaddr]=newPod;
-                    
-                }
-                file.close();           
-            }
-        }
-        explicit MasterImpl(std::string FilePath)
-        {
+
+    public:
+        
+        explicit MasterImpl(
+            string oneP, string oneB,
+            string twoP, string twoB,
+            string threeP, string threeB) : one(oneP, oneB), two(twoP, twoB), three(threeP, threeB) {
+
+            shards = MasterState_Shards_TWO;
+            status = MasterState_Status_VALID;
             std::cout << "[Master] Starting up the Ha FS server!" << std::endl;
-            ConfigFilePath = FilePath;
-            state=1;
-            LoadConfig(ConfigFilePath);
-            std::cout<<"LoadConfig Success"<<std::endl;
         }
 
-        Status SetState(ServerContext *context, const MStatus *req, Response *res) override {
-
-            if(req->state()==MStatus_Status_VALID)
-            {
-                state=true;
-            }
-            else
-            {
-                state=false;
-            }
-            res->set_status(Response_Status_VALID);
+        Status SetState(ServerContext *context, const MasterState *req, Response *res) override {
+            status = req->status();
+            shards = req->shards();
             return Status::OK;
         }
 
-        Status GetState(ServerContext *context, const Request *req, Response *res) override {
-
-            if(state)
-            {
-                res->set_status(Response_Status_VALID);
-            }
-            else
-            {
-                res->set_status(Response_Status_VALID);
-            }
-            return Status::OK;
-        }
-
-        Status AckMaster(ServerContext *context, const Connection *req, ConResponse *res) override {
-            std::cout << "Adding shard!\n";
-            std::string pAddress = req->primaryaddr();
-            std::string sAddress = req->backupaddr();
-            Pod newPod;
-            if(PodList.find(pAddress) == PodList.end() && PodList.find(sAddress) == PodList.end()) // check if by chance backup also sends the ack
-            {
-                std::cout << "Adding shard yo!\n";
-                if(PbPairCount == MAXPOD)
-                {
-                    std::cout << "[Master] MAX shard limit reached" << std::endl;
-                    res->set_status(ConResponse_Status_VALID);
-                    return Status::OK;
-                }
-
-                std::string temp = to_string(PbPairCount)+' '+pAddress+' '+sAddress;
-                ofstream file;
-                ConfigFileLock.lock();
-                file.open(ConfigFilePath,std::ios_base::app);
-                file<<temp<<endl;
-                file.close();
-                newPod.primaryaddr = pAddress;
-                newPod.id = PbPairCount;
-                newPod.backupaddr = sAddress;
-                PodList[pAddress] = newPod;
-                PbPairCount++;
-                ConfigFileLock.unlock();
-
-            }
-            res->set_shardcnt(PbPairCount);
-            res->set_status(ConResponse_Status_VALID);
-            return Status::OK;
-        }
-        Status ActiveConnections(ServerContext *context, const Request *req, ServerWriter<Connection> *res) override {
-            std::cout << "Number of pods: " << PodList.size() << std::endl;
-            for(auto it = PodList.begin();it!=PodList.end();it++)
-            {
-                Pod tempPod = it->second;
-                Connection ele;
-                ele.set_id(tempPod.id);
-                ele.set_primaryaddr(tempPod.primaryaddr);
-                ele.set_backupaddr(tempPod.backupaddr);
-                res->Write(ele);
-            }
+        Status GetState(ServerContext *context, const Request *req, MasterState *res) override {
+            res->set_status(status);
+            res->set_shards(shards);
             return Status::OK;
         }
 
@@ -182,17 +88,14 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    HeartBeatResponse_Role roleEnum;
 
-    std::string server_address = serverAddr;
-    std::string ConfigFilePath = "/user/avkumar/Master/ConfigFile.txt";
-    MasterImpl service(ConfigFilePath);
+    MasterImpl service("10.10.1.1:8093", "10.10.1.1:8094", "10.10.1.1:8095", "10.10.1.1:8096", "10.10.1.1:8097", "10.10.1.1:8098");
     ServerBuilder builder;
     // HafsClient client(grpc::CreateChannel("0.0.0.0:8091", grpc::InsecureChannelCredentials()), "0.0.0.0:8091", false);
-    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+    builder.AddListeningPort(serverAddr, grpc::InsecureServerCredentials());
     builder.RegisterService(&service);
     std::unique_ptr<Server> server(builder.BuildAndStart());
-    std::cout << "Server listening on " << server_address << std::endl;
+    std::cout << "Server listening on " << serverAddr << std::endl;
     server->Wait();
     return 0;
 }

@@ -7,6 +7,11 @@ using ::Connection;
 using ::Response;
 using ::Request;
 using ::MStatus;
+using grpc::Channel;
+using grpc::ClientContext;
+using grpc::ClientReader;
+using grpc::ClientReaderWriter;
+using grpc::Status;
 
 #define BLOCK_SIZE 4096
 unordered_map<int, HafsClientFactory> shard_servers;

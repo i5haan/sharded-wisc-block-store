@@ -196,10 +196,12 @@ int Shard_ClientConsistencySameAddr(int NumWrites, string primaryAddr, string ba
         if(flag == true)
         {
             client1.Read((2+1)*4096, &res);
+            cout << res << endl;
         }
         else
         {
             client1.Read((2)*4096, &res);
+            cout << res << endl;
         }
         time.stop();
         writeTimes.push_back(time.get_time_in_nanoseconds());

@@ -2,7 +2,7 @@
 
 using namespace std;
 
-int main() {
+int main(int argc, char **argv) {
     
     // int TC = 2;
     
@@ -24,7 +24,8 @@ int main() {
         
     // }
 
-    Shard_ClientConsistencyDiffAddr( 10000, "128.105.144.230:8093","128.105.144.230:8094", false);
+    Shard_ClientConsistencyDiffAddr( 10000, argv[1], argv[2], false);
+    //Shard_ClientConsistencyDiffAddr( 10000, "128.105.144.230:8093","128.105.144.211:8094", false);
     
     
     /*myfile.open("ConsistancyResults.csv");

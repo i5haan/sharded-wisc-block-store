@@ -3,8 +3,8 @@
 ./server --SAddr=128.105.144.230:8093 --path=/users/avkumar/Test --role=p --MAddr=128.105.144.230:8094
 
 
-./server --SAddr=128.105.144.223:8097 --path=/users/avkumar/Test1p --role=p --MAddr=128.105.144.211:8098
-./server --SAddr=128.105.144.211:8098 --path=/users/avkumar/Test1b --role=b --MAddr=128.105.144.223:8097
+./server --SAddr=128.105.144.223:8099 --path=/users/avkumar/Test1p --role=p --MAddr=128.105.144.211:8100
+./server --SAddr=128.105.144.211:8100 --path=/users/avkumar/Test1b --role=b --MAddr=128.105.144.223:8099
 
-./server --SAddr=128.105.144.223:8098 --path=/users/avkumar/Test2p --role=p --MAddr=128.105.144.211:8097
-./server --SAddr=128.105.144.211:8097 --path=/users/avkumar/Test2b --role=b --MAddr=128.105.144.223:8098
+./server --SAddr=128.105.144.223:8100 --path=/users/avkumar/Test2p --role=p --MAddr=128.105.144.211:8099
+./server --SAddr=128.105.144.211:8099 --path=/users/avkumar/Test2b --role=b --MAddr=128.105.144.223:8100

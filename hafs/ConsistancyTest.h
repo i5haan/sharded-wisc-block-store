@@ -99,11 +99,11 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
         time.start();
         if(flag == true)
         {
-            client1.Write((2*i+1)*4096, data);
+            client1.Read((2*i+1)*4096, &res);
         }
         else
         {
-            client1.Write((2*i)*4096, data);
+            client1.Read((2*i)*4096, &res);
         }
         time.stop();
         writeTimes.push_back(time.get_time_in_nanoseconds());

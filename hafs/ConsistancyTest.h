@@ -7,6 +7,8 @@
 #include "timer.h"
 #include "metric.h"
 
+#include <fstream>
+
 using namespace std;
 
 /*
@@ -59,7 +61,6 @@ int SingleClientConsistencyDiffAddr(int NumWrites)
 
 int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string backupAddr, bool flag)
 {
-    //odd writes client
     HafsClientFactory client1(primaryAddr, backupAddr);
 
     
@@ -69,10 +70,29 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
     string res;
 
     vector<int> UsedAddr;
+    vector<double> writeTimes;
     Timer2 time;
 
-    //serving odd writes.
+    ofstream myfile;
+    myfile.open ("example_odd.txt");
 
+    ofstream myfile1;
+    myfile1.open ("example_even.txt");
+    
+    // //serving odd writes.
+    // if(flag == true)
+    // {
+        
+    //     //myfile << "Writing this to a file.\n";
+    //     //myfile.close();
+    // }
+    // else
+    // {
+    //     ofstream myfile;
+    //     myfile.open ("example_even.txt");
+
+    // }
+    
     for(int i = 0; i < NumWrites; i++) {
         int CharId = rand()%26;
         string data = string(4096, 'a'+ CharId);
@@ -86,7 +106,17 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
             client1.Write((2*i)*4096, data);
         }
         time.stop();
-        //cout<<time.get_time_in_nanoseconds()<<endl;
+        writeTimes.push_back(time.get_time_in_nanoseconds());
+
+        if(flag == true)
+        {
+            myfile << time.get_time_in_nanoseconds()<<endl;
+        }
+        else
+        {
+            myfile1 << time.get_time_in_nanoseconds()<<endl;
+        }
+        
         //metric1.add(time.get_time_in_nanoseconds());
         UsedAddr.push_back(i*4096);
         /*client.Read(i*4096, &res);
@@ -107,6 +137,10 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
     //     }
     // }
 
+    cout << accumulate(writeTimes.begin(),writeTimes.end(),0) << endl;
+    
+    myfile.close();
+    myfile1.close();
     usleep(10*1000000);
     return 1;
 }

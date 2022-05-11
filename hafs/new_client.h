@@ -144,8 +144,13 @@ class StaticThreeShardFactory {
         }
         bool TriggerShuffle()
         {
-            one.TriggerShuffle(numShards);
-            two.TriggerShuffle(numShards);
+            //This is serial make it parallel;
+            bool flag1 = one.TriggerShuffle(numShards);
+            bool flag2 = two.TriggerShuffle(numShards);
+            if(flag1&&flag2)
+                return true;
+            else
+                return false;
         }
         void setShardNo(int n)
         {

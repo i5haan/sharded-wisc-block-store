@@ -69,7 +69,17 @@ class HafsImpl final : public Hafs::Service {
         Status HeartBeat(ServerContext *context, const Request *req, HeartBeatResponse *res) override {
             res->set_role(this->role);
             res->set_health(replicator.getHealth());
-            res->set_blockload(blockManager.hashCommittedBlocks.size());
+            int blockCount;
+            if(IsFirstShuffle)
+            {
+                mtx.lock();
+                blockManager.curr_index = SHUFFLE_LOC;
+                blockCount = blockManager.hashCommittedBlocks.size();
+                mtx.unlock();
+            }
+            else
+                blockCount = blockManager.hashCommittedBlocks.size();
+            res->set_blockload(blockCount);
             return Status::OK;
         }
 

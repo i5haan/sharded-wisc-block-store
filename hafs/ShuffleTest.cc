@@ -24,6 +24,7 @@ int main() {
         }
         CharId++;
     }
+    usleep(1000000);
     client.setShardNo(3);
     client.TriggerShuffle();
 

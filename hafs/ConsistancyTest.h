@@ -105,19 +105,19 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
         time.start();
         if(flag == 1)
         {
-            client1.Write((4*i)*4096, data);
+            client1.Read((4*i)*4096, &res);
         }
         else if(flag == 2)
         {
-            client1.Write((4*i+1)*4096, data);
+            client1.Read((4*i+1)*4096, &res);
         }
         else if(flag == 3)
         { 
-            client1.Write((4*i+2)*4096, data);
+            client1.Read((4*i+2)*4096, &res);
         }
         else if(flag == 4)
         { 
-            client1.Write((4*i+3)*4096, data);
+            client1.Read((4*i+3)*4096, &res);
         }
 
 

@@ -12,5 +12,5 @@
 ./server --SAddr=128.105.144.223:8101 --path=/users/avkumar/Test3p --role=p --MAddr=128.105.144.211:8102
 ./server --SAddr=128.105.144.211:8102 --path=/users/avkumar/Test3b --role=b --MAddr=128.105.144.223:8101
 
-./server --SAddr=128.105.144.223:8103 --path=/users/avkumar/Test3p --role=p --MAddr=128.105.144.211:8104
-./server --SAddr=128.105.144.211:8104 --path=/users/avkumar/Test3b --role=b --MAddr=128.105.144.223:8103
+./server --SAddr=128.105.144.223:8103 --path=/users/avkumar/Test4p --role=p --MAddr=128.105.144.211:8104
+./server --SAddr=128.105.144.211:8104 --path=/users/avkumar/Test4b --role=b --MAddr=128.105.144.223:8103

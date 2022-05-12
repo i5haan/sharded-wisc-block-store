@@ -45,9 +45,11 @@ class HafsImpl final : public Hafs::Service {
 
     public:
         int64_t counter = 0;
+        bool IsFirstShuffle;
         explicit HafsImpl(std::string pAddress,std::string otherMirrorAddress, std::string masterAddress, HeartBeatResponse_Role role, BlockManager blockManager): replicator(otherMirrorAddress, blockManager), MasterClient(masterAddress) {
             this->role = role;
             this->blockManager = blockManager;
+            IsFirstShuffle = false;
             int NumShard = MasterClient.AddShard(pAddress,otherMirrorAddress);
             std::cout<<"Curr No of Shards:"<<NumShard<<std::endl;
             if(NumShard==-1)
@@ -65,7 +67,7 @@ class HafsImpl final : public Hafs::Service {
         Status HeartBeat(ServerContext *context, const Request *req, HeartBeatResponse *res) override {
             res->set_role(this->role);
             res->set_health(replicator.getHealth());
-            res->set_blockload(blockManager.hashCommittedBlocks.size());
+            res->set_blockload(blockManager.hashCommittedBlocks[START_LOC].size());
             return Status::OK;
         }
 
@@ -167,7 +169,19 @@ class HafsImpl final : public Hafs::Service {
             /*
                 Need to Add shuffle code for moving blocks across servers
             */
-            
+            std::cout<<"Shuffle Started"<<endl;
+            IsFirstShuffle = true;
+            std::unordered_map<std::string, std::string>::iterator it;
+            for(it = blockManager.hashCommittedBlocks[START_LOC].begin();it!=blockManager.hashCommittedBlocks[START_LOC].end();it++)
+            {
+                std::string data;
+                mtx.lock();
+                blockManager.curr_index = START_LOC;
+                blockManager.read(stoi(it->first), &data);
+                blockManager.curr_index = SHUFFLE_LOC;
+                mtx.unlock();
+                MasterClient.ShuffleWrite(stoi(it->second),data);
+            }
             res->set_status(Response_Status_VALID);
             return Status::OK;
         }
@@ -220,7 +234,9 @@ int main(int argc, char **argv) {
     }
 
     std::string server_address = serverAddr;
-    HafsImpl service(server_address, otherMirrorAddress, masterAddress, roleEnum, BlockManager(fsPath));
+    std:: string fsPath0 = fsPath+"0";
+    std:: string fsPath1 = fsPath+"1";
+    HafsImpl service(server_address, otherMirrorAddress, masterAddress, roleEnum, BlockManager(fsPath0,fsPath1));
     ServerBuilder builder;
     // HafsClient client(grpc::CreateChannel("0.0.0.0:8091", grpc::InsecureChannelCredentials()), "0.0.0.0:8091", false);
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());

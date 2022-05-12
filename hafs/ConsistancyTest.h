@@ -59,7 +59,7 @@ int SingleClientConsistencyDiffAddr(int NumWrites)
 }
 
 
-int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string backupAddr, bool flag)
+int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string backupAddr, int flag)
 {
     HafsClientFactory client1(primaryAddr, backupAddr);
 
@@ -74,10 +74,13 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
     Timer2 time;
 
     ofstream myfile;
-    myfile.open ("values_odd.txt",  ios::in | ios::app);
+    myfile.open ("values_odd_write.txt",  ios::in | ios::app);
 
     ofstream myfile1;
-    myfile1.open ("values_even.txt",  ios::in | ios::app);
+    myfile1.open ("values_even_write.txt",  ios::in | ios::app);
+
+    ofstream myfile2;
+    myfile2.open ("values_even_write.txt",  ios::in | ios::app);
     
     // //serving odd writes.
     // if(flag == true)
@@ -97,24 +100,32 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
         int CharId = rand()%26;
         string data = string(4096, 'a'+ CharId);
         time.start();
-        if(flag == true)
+        if(flag == 1)
         {
-            client1.Read((2*i+1)*4096, &res);
+            client1.Write((3*i)*4096, data);
         }
-        else
+        else if(flag == 2)
         {
-            client1.Read((2*i)*4096, &res);
+            client1.Write((3*i+1)*4096, data);
+        }
+        else if(flag == 3)
+        { 
+            client1.Write((3*i+2)*4096, data);
         }
         time.stop();
         writeTimes.push_back(time.get_time_in_nanoseconds());
 
-        if(flag == true)
+        if(flag == 1)
         {
             myfile << time.get_time_in_nanoseconds()<<endl;
         }
-        else
+        else if (flag ==2)
         {
             myfile1 << time.get_time_in_nanoseconds()<<endl;
+        }
+        else if (flag ==3)
+        {
+            myfile2 << time.get_time_in_nanoseconds()<<endl;
         }
         
         //metric1.add(time.get_time_in_nanoseconds());

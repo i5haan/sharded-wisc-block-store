@@ -71,6 +71,12 @@ add_executable(client2 "client2.cc")
     ${PTHREAD_LIB} hw_grpc_proto
     ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF})
 
+add_executable(client3 "client3.cc")
+  target_link_libraries(client3 
+    ${PTHREAD_LIB} hw_grpc_proto
+    ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF})
+
+
 add_executable(MultiConsistancyTest "MultiConsistancyTest.cc")
   target_link_libraries(MultiConsistancyTest 
     ${PTHREAD_LIB} hw_grpc_proto

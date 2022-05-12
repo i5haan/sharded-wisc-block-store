@@ -73,6 +73,10 @@ class MasterImpl final : public Master::Service {
             res->set_shards(shards);
             return Status::OK;
         }
+        Status TFCrash(ServerContext *context, const Request *req, Response *res) override {
+            std::cout<<"[Testing Master] Crashed After Shuffle Request\n";
+            exit(1);
+        }
 
 
 };

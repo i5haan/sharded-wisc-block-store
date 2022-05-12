@@ -15,6 +15,7 @@ service Master
 {
     rpc SetState(MasterState) returns (Response) {}
     rpc GetState(Request) returns (MasterState) {}
+    rpc TFCrash(Request) returns (Response) {}
 }
 
 message MasterState {

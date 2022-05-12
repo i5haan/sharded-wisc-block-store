@@ -156,6 +156,16 @@ class StaticThreeShardFactory {
         {
             numShards = n;
         }
+        void simulateCrash(string s)
+        {
+            Request req;
+            Response res;
+
+            ClientContext context;
+            cout<<"Crash Injected after"<<s<<endl;
+            Status status = master_stub_->TFCrash(&context,req,&res);
+
+        }
 
 
 };

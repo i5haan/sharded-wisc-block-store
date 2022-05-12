@@ -63,6 +63,11 @@ add_executable(ShuffleTest "ShuffleTest.cc")
    ${PTHREAD_LIB} hw_grpc_proto
    ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF})
 
+add_executable(MasterCrash "MasterCrash.cc")
+ target_link_libraries(MasterCrash 
+   ${PTHREAD_LIB} hw_grpc_proto
+   ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF})
+
 #add_executable(status_checker "status_checker.cc")
 #  target_link_libraries(status_checker 
 #    ${PTHREAD_LIB} hw_grpc_proto

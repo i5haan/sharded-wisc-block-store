@@ -50,7 +50,7 @@ class BlockManager {
         }
 
     public:
-        unordered_map<string,string> hashCommittedBlocks;
+        unordered_map<string,string> hashCommittedBlocks[MAX_LOC];
         int curr_index;
 
         BlockManager() {
@@ -72,7 +72,7 @@ class BlockManager {
                         addr.push_back(word);
                     }
                     if(addr.size()==2)
-                        hashCommittedBlocks[addr[0]]=addr[1];
+                        hashCommittedBlocks[curr_index][addr[0]]=addr[1];
                     else
                         cout<<"Error in loading commited block data\n";
                 }
@@ -375,7 +375,7 @@ class BlockManager {
             //Block already present in CommitedList
             string vaddr = to_string(addr);
             string raddr = to_string(actualAddress);
-            if(hashCommittedBlocks.find(vaddr)!=hashCommittedBlocks.end())
+            if(hashCommittedBlocks[curr_index].find(vaddr)!=hashCommittedBlocks[curr_index].end())
             {
                 return true;
             }
@@ -387,7 +387,7 @@ class BlockManager {
                 file.open(CommittedLogPath,std::ios_base::app);
                 file<<vaddr<<" "<<raddr<<endl;
                 file.close();
-                hashCommittedBlocks[vaddr]=raddr;
+                hashCommittedBlocks[curr_index][vaddr]=raddr;
                 CommittedLogLock.unlock();
             }
 

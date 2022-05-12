@@ -10,7 +10,7 @@ using namespace std;
 int main() {
     StaticThreeShardFactory client("10.10.1.1:8091", "10.10.1.1:8093", "10.10.1.1:8094", "10.10.1.1:8095", "10.10.1.1:8096", "10.10.1.1:8097", "10.10.1.1:8098");
     int CharId;
-    for(int i=1;i<1001;i++)
+    for(int i=1;i<100;i++)
     {
         int addr = i*4096;
         string data = string(4096, 'a');
@@ -27,6 +27,6 @@ int main() {
     usleep(1000000);
     client.setShardNo(3);
     client.TriggerShuffle();
-
+    
     return 0;
 }

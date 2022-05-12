@@ -72,13 +72,10 @@ class HafsImpl final : public Hafs::Service {
             int blockCount;
             if(IsFirstShuffle)
             {
-                mtx.lock();
-                blockManager.curr_index = SHUFFLE_LOC;
-                blockCount = blockManager.hashCommittedBlocks.size();
-                mtx.unlock();
+                blockCount = blockManager.hashCommittedBlocks[SHUFFLE_LOC].size();
             }
             else
-                blockCount = blockManager.hashCommittedBlocks.size();
+                blockCount = blockManager.hashCommittedBlocks[START_LOC].size();
             res->set_blockload(blockCount);
             return Status::OK;
         }
@@ -190,7 +187,7 @@ class HafsImpl final : public Hafs::Service {
             IsFirstShuffle = true;
             std::unordered_map<std::string, std::string>::iterator it;
             MasterClient.setShardNo(MasterClient.getShards()+1);
-            for(it = blockManager.hashCommittedBlocks.begin();it!=blockManager.hashCommittedBlocks.end();it++)
+            for(it = blockManager.hashCommittedBlocks[START_LOC].begin();it!=blockManager.hashCommittedBlocks[START_LOC].end();it++)
             {
                 std::string data;
                 mtx.lock();

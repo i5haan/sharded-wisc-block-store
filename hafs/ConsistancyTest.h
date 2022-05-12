@@ -83,7 +83,7 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
     myfile2.open ("values_3_writes.txt",  ios::in | ios::app);
 
     ofstream myfile3;
-    myfile2.open ("values_4_writes.txt",  ios::in | ios::app);
+    myfile3.open ("values_4_writes.txt",  ios::in | ios::app);
     
     // //serving odd writes.
     // if(flag == true)

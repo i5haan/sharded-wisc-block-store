@@ -81,6 +81,9 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
 
     ofstream myfile2;
     myfile2.open ("values_3_writes.txt",  ios::in | ios::app);
+
+    ofstream myfile3;
+    myfile2.open ("values_4_writes.txt",  ios::in | ios::app);
     
     // //serving odd writes.
     // if(flag == true)
@@ -102,16 +105,22 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
         time.start();
         if(flag == 1)
         {
-            client1.Read((3*i)*4096, &res);
+            client1.Write((4*i)*4096, data);
         }
         else if(flag == 2)
         {
-            client1.Read((3*i+1)*4096, &res);
+            client1.Write((4*i+1)*4096, data);
         }
         else if(flag == 3)
         { 
-            client1.Read((3*i+2)*4096, &res);
+            client1.Write((4*i+2)*4096, data);
         }
+        else if(flag == 4)
+        { 
+            client1.Write((4*i+3)*4096, data);
+        }
+
+
         time.stop();
         writeTimes.push_back(time.get_time_in_nanoseconds());
 
@@ -126,6 +135,10 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
         else if (flag ==3)
         {
             myfile2 << time.get_time_in_nanoseconds()<<endl;
+        }
+        else if (flag ==4)
+        {
+            myfile3 << time.get_time_in_nanoseconds()<<endl;
         }
         
         //metric1.add(time.get_time_in_nanoseconds());
@@ -152,13 +165,17 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
     {
         myfile << accumulate(writeTimes.begin(),writeTimes.end(),0) << endl;
     }
-    else if((flag == true))
+    else if((flag == 2))
     {
         myfile1 << accumulate(writeTimes.begin(),writeTimes.end(),0) << endl;
     }
-    else if((flag == true))
+    else if((flag == 3))
     {
         myfile2 << accumulate(writeTimes.begin(),writeTimes.end(),0) << endl;
+    }
+    else if((flag == 4))
+    {
+        myfile3 << accumulate(writeTimes.begin(),writeTimes.end(),0) << endl;
     }
     //myfile << accumulate(writeTimes.begin(),writeTimes.end(),0) << endl;
     //myfile << accumulate(writeTimes.begin(),writeTimes.end(),0) << endl;
@@ -166,6 +183,7 @@ int Shard_ClientConsistencyDiffAddr(int NumWrites, string primaryAddr, string ba
     myfile.close();
     myfile1.close();
     myfile2.close();
+    myfile3.close();
     usleep(10*1000000);
     return 1;
 }

@@ -23,6 +23,7 @@
 #include "common.cc"
 #include "client_impl.h"
 #include "block_manager.h"
+#include "client_lib.h"
 
 using ::Request;
 using ::Connection;
@@ -146,6 +147,11 @@ class MasterImpl final : public Master::Service {
                 PodList[pAddress] = newPod;
                 PbPairCount++;
                 ConfigFileLock.unlock();
+                // Ask all shards to buckle up and shuffle each other! :)
+                for(auto& it: PodList) {
+                    HafsClientFactory client(it.second.primaryaddr, it.second.backupaddr);
+                    client.TriggerShuffle(PbPairCount);
+                }
 
             }
             res->set_shardcnt(PbPairCount);
